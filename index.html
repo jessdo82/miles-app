@@ -368,18 +368,23 @@ async function syncCloud(){
     const localOnlyAccs=localAccs.filter(a=>!cloudAccMap.has(a.id));
     const mergedAccs=[...cloudAccMap.values(),...localOnlyAccs];
 
-    // 5. 合併 rates / profits（本地優先）
+    // 5. 合併 rates / profits / AR（本地優先：本機改過的值蓋掉雲端）
     const mergedRates={...(cloud?.rates||{}),...getRates()};
     const mergedProfits={...(cloud?.profits||{}),...getProfits()};
+    // AR: 逐廠商合併，取欠款較新的值（本地優先，雲端補充本地沒有的廠商）
+    const localAR=getAR();
+    const cloudAR=cloud?.ar||{};
+    const mergedAR={...cloudAR,...localAR};
 
     saveRecs(mergedRecs);
     saveAccounts(mergedAccs);
     saveRates(mergedRates);
     saveProfits(mergedProfits);
+    saveAR(mergedAR);
 
-    // 6. 上傳合併後的資料（含刪除清單）
+    // 6. 上傳合併後的資料（含刪除清單 + AR）
     const putRes=await fetch(FB,{method:'PUT',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({records:mergedRecs,accounts:mergedAccs,rates:mergedRates,profits:mergedProfits,deleted:allDeleted,synced:new Date().toISOString()})});
+      body:JSON.stringify({records:mergedRecs,accounts:mergedAccs,rates:mergedRates,profits:mergedProfits,ar:mergedAR,deleted:allDeleted,synced:new Date().toISOString()})});
     if(!putRes.ok){
       const txt=await putRes.text();
       throw new Error(`上傳失敗 ${putRes.status}: ${txt.slice(0,80)}`);
