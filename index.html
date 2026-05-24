@@ -150,11 +150,11 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
         <label>付款狀態</label>
         <div class="seg" id="s-pay-seg">
           <div class="seg-opt active" data-v="unpaid" onclick="setSeg('s-pay-seg',this);document.getElementById('s-pay-dest-wrap').style.display='none'">未付款</div>
-          <div class="seg-opt" data-v="paid" onclick="setSeg('s-pay-seg',this);document.getElementById('s-pay-dest-wrap').style.display='block'">已付款</div>
+          <div class="seg-opt" data-v="paid" onclick="setSeg('s-pay-seg',this);document.getElementById('s-pay-dest-wrap').style.display='block';populateSellPayDest()">已付款</div>
         </div>
       </div>
       <div id="s-pay-dest-wrap" style="display:none">
-        <div class="fg"><label>收款帳戶 <span style="font-size:11px;color:#999;font-weight:400">（款項收到哪裡）</span></label><div class="acw"><input type="text" id="s-pay-dest" placeholder="支付寶、銀行帳號等" autocomplete="off"><div class="acl" id="s-pay-dest-ac"></div></div></div>
+        <div class="fg"><label>收款帳戶 <span style="font-size:11px;color:#999;font-weight:400">（款項收到哪裡）</span></label><select id="s-pay-dest" style="width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid #e5e5ea;background:#fff;font-size:15px;color:var(--txt);appearance:none;-webkit-appearance:none"><option value="">選擇帳戶</option></select></div>
       </div>
       <div class="fg"><label>備註</label><input type="text" id="s-note" placeholder="選填"></div>
       <button class="btn" onclick="submit('出貨')">儲存出貨</button>
@@ -316,6 +316,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
     <div id="ma-delete-wrap" style="display:none;margin-top:10px">
       <button class="btn btn-danger btn-sm" style="width:100%" onclick="deleteAccount()">刪除此帳戶</button>
     </div>
+    <div id="ma-tx-wrap" style="margin-top:4px;max-height:45vh;overflow-y:auto"></div>
   </div>
 </div>
 
@@ -331,6 +332,45 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
       <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeImport()">取消</button>
       <button class="btn btn-sm" style="flex:1" onclick="doImport()">匯入</button>
     </div>
+  </div>
+</div>
+
+<!-- AR Settle Modal -->
+<div class="modal-bg" id="modal-ar-settle">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-ar-settle-title">結清應收帳款</div>
+    <div class="seg" id="settle-type-seg" style="margin-bottom:16px">
+      <div class="seg-opt active" data-v="exchange" onclick="setSeg('settle-type-seg',this);showSettleFlow('exchange')">換匯結清</div>
+      <div class="seg-opt" data-v="account" onclick="setSeg('settle-type-seg',this);showSettleFlow('account')">收到帳戶（稍後換）</div>
+    </div>
+    <div id="settle-flow-exchange">
+      <div class="fg"><label>換匯金額（CNY）</label><input type="number" id="settle-rmb" inputmode="decimal" oninput="const r=parseFloat(document.getElementById('settle-rate').value);if(r&&this.value)document.getElementById('settle-twd').value=(parseFloat(this.value)*r).toFixed(0)"></div>
+      <div class="row2">
+        <div class="fg"><label>匯率</label><input type="number" id="settle-rate" placeholder="4.70" inputmode="decimal" step="0.001" oninput="const r=parseFloat(document.getElementById('settle-rmb').value);if(r&&this.value)document.getElementById('settle-twd').value=(r*parseFloat(this.value)).toFixed(0)"></div>
+        <div class="fg"><label>台幣金額</label><input type="number" id="settle-twd" placeholder="自動計算" inputmode="decimal"></div>
+      </div>
+      <div class="fg"><label>台幣收到帳戶</label><select id="settle-twd-acc" style="width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid #e5e5ea;background:#fff;font-size:15px;color:var(--txt);appearance:none;-webkit-appearance:none"><option value="">選擇帳戶</option></select></div>
+      <div class="fg"><label>換匯管道（選填）</label><input type="text" id="settle-ch" placeholder="例：唐磊打款換匯"></div>
+    </div>
+    <div id="settle-flow-account" style="display:none">
+      <p style="font-size:13px;color:var(--txt2);margin:0 0 14px">款項先收到人民幣帳戶，稍後再換匯</p>
+      <div class="fg"><label>收到哪個帳戶（CNY）</label><select id="settle-acc" style="width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid #e5e5ea;background:#fff;font-size:15px;color:var(--txt);appearance:none;-webkit-appearance:none"><option value="">選擇帳戶</option></select></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="document.getElementById('modal-ar-settle').classList.remove('open')">取消</button>
+      <button class="btn btn-sm" style="flex:1" onclick="confirmARSettle()">確認結清</button>
+    </div>
+  </div>
+</div>
+
+<!-- Log Modal -->
+<div class="modal-bg" id="modal-log">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">最近操作日誌</div>
+    <div id="modal-log-body" style="max-height:55vh;overflow-y:auto"></div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:14px;width:100%" onclick="document.getElementById('modal-log').classList.remove('open')">關閉</button>
   </div>
 </div>
 
@@ -416,6 +456,21 @@ async function syncCloud(){
 
 // ─── Storage ───────────────────────────────────────────────
 const RK='ml_rec', AK='ml_ac', ACK='ml_accounts', RTK='ml_rates';
+const LGK='ml_log';
+const getLog=()=>JSON.parse(localStorage.getItem(LGK)||'[]');
+const saveLog=d=>localStorage.setItem(LGK,JSON.stringify(d));
+function logActivity(action,detail){const lg=getLog();lg.unshift({time:new Date().toISOString(),action,detail});if(lg.length>60)lg.pop();saveLog(lg);}
+function showLog(){
+  const lg=getLog();
+  const el=document.getElementById('modal-log-body');
+  if(!lg.length){el.innerHTML='<div style="text-align:center;color:var(--txt3);padding:20px">尚無操作記錄</div>';}
+  else el.innerHTML=lg.map(e=>{
+    const dt=new Date(e.time);
+    const ts=`${dt.getMonth()+1}/${dt.getDate()} ${dt.getHours().toString().padStart(2,'0')}:${dt.getMinutes().toString().padStart(2,'0')}`;
+    return `<div style="padding:10px 0;border-bottom:1px solid #f2f2f7"><div style="display:flex;justify-content:space-between"><span style="font-size:13px;font-weight:600">${esc(e.action)}</span><span style="font-size:11px;color:var(--txt3)">${ts}</span></div><div style="font-size:12px;color:var(--txt2);margin-top:2px">${esc(e.detail)}</div></div>`;
+  }).join('');
+  document.getElementById('modal-log').classList.add('open');
+}
 const getRecs=()=>JSON.parse(localStorage.getItem(RK)||'[]');
 const saveRecs=d=>localStorage.setItem(RK,JSON.stringify(d));
 const getAC=()=>JSON.parse(localStorage.getItem(AK)||'{}');
@@ -486,9 +541,19 @@ function setupAC(inpId,lstId,field){
 }
 function showAC(inp,lst,field){
   const q=inp.value.toLowerCase();
-  const accNames=getAccounts().map(a=>a.name);
-  const stored=getAC()[field]||[];
-  const all=[...new Set([...stored,...accNames])];
+  const recs=getRecs();
+  let all=[];
+  if(field==='vendor'){
+    const fromRecs=[...new Set(recs.filter(r=>r.vendor).map(r=>r.vendor))];
+    const fromAR=Object.keys(getAR());
+    all=[...new Set([...fromRecs,...fromAR])];
+  }else if(field==='seller'){
+    all=[...new Set(recs.filter(r=>r.seller).map(r=>r.seller))];
+  }else{
+    const accNames=getAccounts().map(a=>a.name);
+    const stored=getAC()[field]||[];
+    all=[...new Set([...stored,...accNames])];
+  }
   const opts=all.filter(v=>!q||v.toLowerCase().includes(q));
   if(!opts.length){lst.style.display='none';return;}
   lst.innerHTML=opts.slice(0,8).map(v=>`<div class="aci" onmousedown="pickAC(event,'${inp.id}','${lst.id}','${v.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')"><b>${esc(v)}</b></div>`).join('');
@@ -577,6 +642,11 @@ function submit(type){
     clear('o-acc','o-amt','o-desc');
   }
   const recs=getRecs(); recs.unshift(rec); saveRecs(recs);
+  const logDetail=rec.type==='出貨'?`${rec.vendor||''} ¥${rec.total||''} ${rec.payment_status==='paid'?'已付款':'未付款'}`
+    :rec.type==='進貨'?`${rec.seller||''} ${rec.airline||''} ${rec.miles||''}萬 NT$${rec.total||''}`
+    :rec.type==='換匯'?`${rec.channel||''} ¥${rec.rmb||''}→NT$${rec.twd||''} @${rec.rate||''}`
+    :`${rec.account||rec.vendor||''}`;
+  logActivity('新增'+type, logDetail);
   setDates(); toast('✓ 已儲存');
 }
 function clear(...ids){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value='';})}
@@ -645,7 +715,7 @@ function renderAccounts(){
     html+='</div>';
   });
   html+=`<button class="btn btn-ghost" style="margin-top:4px" onclick="openAccModal()">＋ 新增帳戶</button>`;
-  html+=`<div style="height:10px"></div><button class="btn-export" onclick="exportCSV()">匯出 CSV</button>`;
+  html+=`<div style="height:10px"></div><div style="display:flex;gap:8px"><button class="btn-export" style="flex:1" onclick="exportCSV()">匯出 CSV</button><button class="btn-export" style="flex:1;background:#f2f2f7;color:var(--txt)" onclick="showLog()">操作日誌</button></div>`;
   el.innerHTML=html;
 }
 
@@ -661,14 +731,21 @@ function openAccModal(id){
     document.getElementById('modal-acc-title').textContent='編輯帳戶';
     document.getElementById('ma-name').value=acc.name;
     document.getElementById('ma-type').value=acc.type||'銀行';
+    document.getElementById('ma-bal-label').textContent=acc.type==='人民幣帳戶'?'目前餘額（CNY）':'目前餘額（TWD）';
     document.getElementById('ma-bal').value=acc.startBalance||'';
     delWrap.style.display='block';
+    // Show account transactions
+    const txWrap=document.getElementById('ma-tx-wrap');
+    if(txWrap)txWrap.innerHTML='<div style="font-size:11px;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-top:14px;border-top:1.5px solid #e5e5ea">帳戶明細</div>'+renderAccTx(acc.name,acc.type==='人民幣帳戶');
   }else{
     document.getElementById('modal-acc-title').textContent='新增帳戶';
     document.getElementById('ma-name').value='';
     document.getElementById('ma-type').value='銀行';
     document.getElementById('ma-bal').value='';
+    document.getElementById('ma-bal-label').textContent='目前餘額（TWD）';
     delWrap.style.display='none';
+    const txWrap=document.getElementById('ma-tx-wrap');
+    if(txWrap)txWrap.innerHTML='';
   }
   modal.classList.add('open');
 }
@@ -773,11 +850,14 @@ function renderRecords(){
 }
 function delRec(id){
   if(!confirm('刪除這筆紀錄？'))return;
+  const rec=getRecs().find(r=>r.id==id);
+  const logDetail=rec?`${rec.type} ${rec.date} ${rec.vendor||rec.seller||rec.channel||''}`:String(id);
   saveRecs(getRecs().filter(r=>r.id!==id));
   // Track deletion so sync won't bring it back
   const del=getDeleted();
   if(!del.includes(id))del.push(id);
   saveDeleted(del);
+  logActivity('刪除紀錄',logDetail);
   renderRecords();
   if(document.getElementById('sec-acc').classList.contains('active'))renderAccounts();
 }
@@ -958,6 +1038,26 @@ function showRecordDetail(id){
     relatedHTML+='</div>';
   }
 
+  // Enhanced 換匯 detail
+  let exchangeHTML='';
+  if(rec.type==='換匯'){
+    const accAfter=rec.account?getBalance(rec.account):null;
+    const fromAccAfter=rec.from_account?getBalance(rec.from_account):null;
+    const rows=[
+      rec.channel&&['換匯管道',rec.channel],
+      rec.rmb&&['人民幣（CNY）',`¥ ${fmt(parseFloat(rec.rmb))}`],
+      rec.twd&&['台幣（TWD）',`NT$ ${fmt(parseFloat(rec.twd))}`],
+      rec.rate&&['匯率',`${rec.rate} TWD/CNY`],
+      rec.from_account&&['支出帳戶',rec.from_account+(fromAccAfter!==null?`（剩 ¥${fmt(fromAccAfter)}）`:'')],
+      rec.account&&['收款帳戶',rec.account+(accAfter!==null?`（現 NT$${fmt(accAfter)}）`:'')],
+      rec.from_vendor&&['款項來自廠商',rec.from_vendor],
+      rec.note&&['備註',rec.note],
+    ].filter(Boolean);
+    exchangeHTML=`<div style="margin-top:14px;background:#f9f9f9;border-radius:12px;padding:14px">
+      ${rows.map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f2f2f7;font-size:13px"><span style="color:var(--txt3)">${k}</span><span style="font-weight:600">${esc(String(v))}</span></div>`).join('')}
+    </div>`;
+  }
+
   const profitHTML=dealProfit!==null
     ?`<div style="margin-top:16px;padding:16px;background:linear-gradient(135deg,#f0fff4,#e8f4ff);border-radius:14px;text-align:center">
         <div style="font-size:11px;color:var(--txt2);font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">此筆淨利</div>
@@ -981,7 +1081,7 @@ function showRecordDetail(id){
       <div style="margin-top:10px;font-size:16px;font-weight:700">${amtLine}</div>
       ${payBadge}
     </div>
-    ${relatedHTML}${profitHTML}`;
+    ${exchangeHTML}${relatedHTML}${profitHTML}`;
   document.getElementById('modal-deal').classList.add('open');
 }
 function closeRecordDetail(){document.getElementById('modal-deal').classList.remove('open');}
@@ -1108,23 +1208,7 @@ function renderSummary(){
 }
 
 // ─── AR (Accounts Receivable) ──────────────────────────────
-function markVendorReceived(vendor){
-  const ar=getAR();
-  if(!ar[vendor])return;
-  const owed=ar[vendor].owed||0;
-  const cnyAccs=getAccounts().filter(a=>a.type==='人民幣帳戶').map(a=>a.name);
-  const hint=cnyAccs.length?`\n可選：${cnyAccs.join('、')}`:'\n（可輸入支付寶、銀行帳號等）';
-  const dest=prompt(`¥${fmt(owed)} 款項收到哪個帳戶？${hint}\n\n留空則只標記結清，不更新帳戶餘額`,'');
-  if(dest===null)return;
-  ar[vendor].settled_amount=owed;
-  ar[vendor].settled_to=dest.trim()||'';
-  ar[vendor].settled_at=new Date().toISOString().slice(0,10);
-  ar[vendor].owed=0;
-  saveAR(ar);
-  renderSummary();
-  populateExchangeVendors();
-  toast(`${vendor} 已全結清${dest.trim()?'，¥'+fmt(owed)+' → '+dest.trim():''}`);
-}
+function markVendorReceived(vendor){openARSettle(vendor);}
 function editARAmount(vendor){
   const ar=getAR();
   const cur=(ar[vendor]?.owed||0).toFixed(0);
@@ -1174,6 +1258,105 @@ function populateExchangeVendors(){
       opt.textContent=vendor+'（已結清）';
       sel.appendChild(opt);
     });
+}
+
+function renderAccTx(accName,isCNY){
+  const recs=getRecs();
+  const tx=[];
+  if(isCNY){
+    recs.forEach(r=>{
+      if(r.type==='出貨'&&r.payment_status==='paid'&&r.paid_to===accName)
+        tx.push({date:r.date,desc:`出貨收款 ${r.vendor||''}`,amt:parseFloat(r.total)||0,sign:1});
+      if(r.type==='換匯'&&r.from_account===accName)
+        tx.push({date:r.date,desc:`換匯出 → ${r.account||''}`,amt:parseFloat(r.rmb)||0,sign:-1});
+    });
+    const ar=getAR();
+    Object.entries(ar).forEach(([v,e])=>{if(e.settled_to===accName&&e.settled_amount&&e.settled_at)tx.push({date:e.settled_at,desc:`${v} AR結清`,amt:parseFloat(e.settled_amount)||0,sign:1});});
+  }else{
+    recs.forEach(r=>{
+      if(r.type==='進貨'&&r.payment===accName)tx.push({date:r.date,desc:`進貨 ${r.seller||''}`,amt:(parseFloat(r.total)||0)+(parseFloat(r.fee)||0),sign:-1});
+      if(r.type==='換匯'&&r.account===accName)tx.push({date:r.date,desc:`換匯入 ${r.channel||''}`,amt:parseFloat(r.twd)||0,sign:1});
+      if(r.type==='稅金'&&r.card===accName)tx.push({date:r.date,desc:`稅金 ${r.vendor||''}`,amt:parseFloat(r.twd)||0,sign:-1});
+      if(r.type==='其他'&&r.account===accName)tx.push({date:r.date,desc:r.desc||'其他',amt:parseFloat(r.amount)||0,sign:r.dir==='收入'?1:-1});
+    });
+  }
+  tx.sort((a,b)=>b.date.localeCompare(a.date));
+  if(!tx.length)return '<div style="text-align:center;color:var(--txt3);padding:16px;font-size:13px">尚無交易記錄</div>';
+  const sym=isCNY?'¥':'NT$';
+  return tx.slice(0,30).map(t=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #f2f2f7"><div><div style="font-size:13px;font-weight:500">${esc(t.desc)}</div><div style="font-size:11px;color:var(--txt3)">${t.date}</div></div><span class="${t.sign>0?'green':'red'}" style="font-weight:700;font-size:14px">${t.sign>0?'+':'-'}${sym}${fmt(t.amt)}</span></div>`).join('');
+}
+
+function populateSellPayDest(){
+  const sel=document.getElementById('s-pay-dest');
+  if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">選擇帳戶</option>';
+  getAccounts().forEach(a=>{
+    const opt=document.createElement('option');
+    opt.value=a.name;
+    opt.textContent=a.name+(a.type==='人民幣帳戶'?' (¥)':'');
+    if(a.name===cur)opt.selected=true;
+    sel.appendChild(opt);
+  });
+}
+
+let _settleVendor='';
+function openARSettle(vendor){
+  _settleVendor=vendor;
+  const ar=getAR();
+  const owed=ar[vendor]?.owed||0;
+  document.getElementById('modal-ar-settle-title').textContent=`${vendor} 結清 ¥${fmt(owed)}`;
+  document.getElementById('settle-rmb').value=owed;
+  document.getElementById('settle-rate').value='';
+  document.getElementById('settle-twd').value='';
+  document.getElementById('settle-ch').value='';
+  // Populate TWD accounts
+  const twdSel=document.getElementById('settle-twd-acc');
+  twdSel.innerHTML='<option value="">選擇帳戶</option>';
+  getAccounts().filter(a=>a.type!=='人民幣帳戶').forEach(a=>{const o=document.createElement('option');o.value=a.name;o.textContent=a.name;twdSel.appendChild(o);});
+  // Populate CNY accounts
+  const cnySel=document.getElementById('settle-acc');
+  cnySel.innerHTML='<option value="">選擇帳戶</option>';
+  getAccounts().filter(a=>a.type==='人民幣帳戶').forEach(a=>{const o=document.createElement('option');o.value=a.name;o.textContent=`${a.name}（¥${fmt(getBalance(a.name))}）`;cnySel.appendChild(o);});
+  // Default flow
+  showSettleFlow('exchange');
+  setSeg('settle-type-seg',document.querySelector('#settle-type-seg .seg-opt'));
+  document.getElementById('modal-ar-settle').classList.add('open');
+}
+function showSettleFlow(type){
+  document.getElementById('settle-flow-exchange').style.display=type==='exchange'?'block':'none';
+  document.getElementById('settle-flow-account').style.display=type==='account'?'block':'none';
+}
+function confirmARSettle(){
+  const ar=getAR();
+  const owed=ar[_settleVendor]?.owed||0;
+  const type=segVal('settle-type-seg');
+  if(type==='exchange'){
+    const rmb=parseFloat(document.getElementById('settle-rmb').value)||owed;
+    const rate=parseFloat(document.getElementById('settle-rate').value);
+    const twd=parseFloat(document.getElementById('settle-twd').value);
+    const acc=document.getElementById('settle-twd-acc').value;
+    const ch=(document.getElementById('settle-ch').value||'').trim()||_settleVendor+'打款換匯';
+    if(!rate||!twd||!acc){toast('請填寫匯率、台幣金額和收款帳戶');return;}
+    const rec={id:Date.now(),type:'換匯',date:today(),channel:ch,rmb:String(rmb),twd:String(twd),rate:String(rate),account:acc,from_vendor:_settleVendor,note:`${_settleVendor} AR結清換匯`};
+    const recs=getRecs();recs.unshift(rec);saveRecs(recs);
+    ar[_settleVendor].owed=Math.max(0,(ar[_settleVendor].owed||0)-rmb);
+    ar[_settleVendor].settled_to=acc;ar[_settleVendor].settled_at=today();
+    saveAR(ar);
+    logActivity('AR結清換匯',`${_settleVendor} ¥${fmt(rmb)} @${rate} → NT$${fmt(twd)} → ${acc}`);
+    toast(`✓ 換匯結清 ¥${fmt(rmb)} → NT$${fmt(twd)} 到 ${acc}`);
+  }else{
+    const acc=document.getElementById('settle-acc').value;
+    if(!acc){toast('請選擇帳戶');return;}
+    ar[_settleVendor].settled_amount=owed;
+    ar[_settleVendor].settled_to=acc;ar[_settleVendor].settled_at=today();
+    ar[_settleVendor].owed=0;
+    saveAR(ar);
+    logActivity('AR收到帳戶',`${_settleVendor} ¥${fmt(owed)} → ${acc}`);
+    toast(`✓ ¥${fmt(owed)} 已收到 ${acc}`);
+  }
+  document.getElementById('modal-ar-settle').classList.remove('open');
+  renderSummary();populateExchangeVendors();
 }
 
 function populateCNYAccounts(){
