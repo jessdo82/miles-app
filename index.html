@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="里程記帳">
+<title>里程記帳</title>
+<style>
+:root{
+  --bg:#f2f2f7;--bg2:#ffffff;--bg3:#f2f2f7;
+  --border:rgba(0,0,0,.08);--border-hi:rgba(0,0,0,.14);
+  --txt:#1c1c1e;--txt2:#6e6e73;--txt3:#aeaeb2;
+  --blue:#007aff;--green:#34c759;--red:#ff3b30;
+  --orange:#ff9500;--purple:#af52de;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang TC',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+
+.hd{background:rgba(255,255,255,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:16px 20px 0;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.hd h1{font-size:22px;font-weight:800;padding-bottom:12px;letter-spacing:-.4px}
+.tabs{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:10px 16px;font-size:14px;font-weight:500;color:var(--txt2);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:color .15s}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+
+.ct{padding:16px 16px 100px;max-width:520px;margin:0 auto}
+
+.fg{margin-bottom:14px}
+label{display:block;font-size:11px;color:var(--txt3);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+input,select,textarea{width:100%;padding:13px 15px;border:1.5px solid #e5e5ea;border-radius:12px;font-size:16px;background:#fff;color:var(--txt);-webkit-appearance:none;appearance:none;outline:none;transition:border-color .2s,box-shadow .2s;font-family:inherit}
+textarea{font-size:13px;font-family:monospace;resize:none}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,122,255,.15)}
+input.calc{background:#f9f9f9;color:var(--txt2)}
+input::placeholder,textarea::placeholder{color:var(--txt3)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.acw{position:relative}
+.acl{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1.5px solid #e5e5ea;border-radius:12px;max-height:200px;overflow-y:auto;z-index:300;box-shadow:0 8px 30px rgba(0,0,0,.12);display:none}
+.aci{padding:13px 15px;font-size:15px;cursor:pointer;border-bottom:1px solid #f2f2f7;color:var(--txt)}
+.aci:last-child{border-bottom:none}
+.aci:active{background:#f2f2f7}
+
+.btn{width:100%;padding:15px;background:var(--blue);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;margin-top:6px;transition:opacity .15s,transform .1s}
+.btn:active{opacity:.8;transform:scale(.98)}
+.btn-sm{padding:12px 16px;font-size:14px;border-radius:12px;margin-top:0}
+.btn-ghost{background:#f2f2f7;color:var(--blue);border:none}
+.btn-ghost:active{background:#e5e5ea}
+.btn-danger{background:#fff0f0;color:var(--red);border:none}
+.btn-export{display:block;width:100%;padding:13px;background:#fff;border:1.5px solid #e5e5ea;color:var(--blue);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:10px;text-align:center}
+.btn-export:active{background:#f2f2f7}
+
+.sec{display:none}.sec.active{display:block}
+
+.bnav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom,0)}
+.ni{flex:1;text-align:center;cursor:pointer;padding:10px 0 7px}
+.ni-icon{display:flex;justify-content:center;margin-bottom:3px}
+.ni-icon svg{width:22px;height:22px;stroke:var(--txt3);fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.75;transition:stroke .15s}
+.ni-lbl{font-size:10px;color:var(--txt3);font-weight:600;letter-spacing:.2px;transition:color .15s}
+.ni.active .ni-icon svg{stroke:var(--blue)}
+.ni.active .ni-lbl{color:var(--blue)}
+
+.card{background:#fff;border-radius:14px;padding:15px 16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.rc-top{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.2px}
+.b-出貨{background:#e0f0ff;color:var(--blue)}
+.b-進貨{background:#e3fced;color:#1d8c40}
+.b-換匯{background:#fff4e0;color:#c96500}
+.b-稅金{background:#ffe5e5;color:var(--red)}
+.b-其他{background:#f3e8ff;color:var(--purple)}
+.rc-date{font-size:12px;color:var(--txt3);margin-left:auto;font-weight:500}
+.rc-del{background:none;border:none;color:var(--txt3);font-size:12px;cursor:pointer;padding:3px 6px;border-radius:6px}
+.rc-del:active{color:var(--red)}
+.rc-body{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.rc-main{font-size:15px;font-weight:600}
+.rc-sub{font-size:12px;color:var(--txt2);margin-top:3px;line-height:1.7}
+.rc-amt{text-align:right;font-size:14px;font-weight:700;white-space:nowrap;line-height:1.9;flex-shrink:0}
+
+.acc-section{margin-bottom:16px}
+.acc-section-title{font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;padding:0 4px;margin-bottom:8px}
+.acc-row{display:flex;justify-content:space-between;align-items:center;padding:15px 16px;background:#fff;border-radius:14px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.acc-row:active{opacity:.7}
+.acc-name{font-size:16px;font-weight:500}
+.acc-bal{font-size:16px;font-weight:700}
+.acc-bal.pos{color:var(--txt)}
+.acc-bal.neg{color:var(--red)}
+.acc-total{background:linear-gradient(135deg,#e8f4ff,#eee8ff);border-radius:18px;padding:22px 20px;margin-bottom:16px}
+.acc-total-label{font-size:11px;color:var(--txt2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.acc-total-val{font-size:30px;font-weight:800;letter-spacing:-.5px}
+
+.sc{background:#fff;border-radius:14px;padding:18px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.sc-t{font-size:11px;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.sc-r{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f2f2f7;font-size:14px}
+.sc-r:last-child{border-bottom:none}
+.sc-r>span:first-child{color:var(--txt2)}
+.sc-v{font-weight:700}
+.sc-month{background:#fff;border-radius:16px;padding:0;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,.07);overflow:hidden}
+.sc-month-hd{padding:14px 18px 12px;background:linear-gradient(135deg,#f0f6ff,#f5f0ff);display:flex;justify-content:space-between;align-items:baseline}
+.sc-month-title{font-size:16px;font-weight:800;letter-spacing:-.3px}
+.sc-month-net{font-size:20px;font-weight:800;letter-spacing:-.5px}
+.sc-month-body{padding:4px 18px 14px}
+
+.rate-bar{background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;align-items:center;gap:12px}
+.rate-bar label{margin:0;white-space:nowrap;font-size:12px;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:.4px}
+.rate-bar input{flex:1;padding:9px 12px;font-size:15px;font-weight:600;border-radius:10px;margin:0}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:500;display:none;align-items:flex-end}
+.modal-bg.open{display:flex}
+.modal{background:#f2f2f7;border-radius:20px 20px 0 0;padding:20px 16px 40px;width:100%;max-height:92vh;overflow-y:auto}
+.modal-handle{width:36px;height:4px;background:var(--txt3);border-radius:2px;margin:0 auto 20px;opacity:.35}
+.modal-title{font-size:18px;font-weight:800;margin-bottom:18px;text-align:center;letter-spacing:-.3px}
+
+.blue{color:var(--blue)}.red{color:var(--red)}.green{color:var(--green)}.orange{color:var(--orange)}.purple{color:var(--purple)}
+.empty{text-align:center;padding:60px 20px;color:var(--txt3);font-size:15px}
+.toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:rgba(28,28,30,.9);color:#fff;padding:11px 24px;border-radius:24px;font-size:14px;font-weight:500;opacity:0;transition:opacity .25s;z-index:999;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1}
+
+.seg{display:flex;background:#e5e5ea;border-radius:9px;padding:2px;margin-bottom:14px}
+.seg-opt{flex:1;text-align:center;padding:8px 4px;font-size:14px;font-weight:500;border-radius:7px;cursor:pointer;color:var(--txt2);transition:all .15s}
+.seg-opt.active{background:#fff;color:var(--txt);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+</style>
+</head>
+<body>
+
+<!-- ========== ADD ========== -->
+<div class="sec active" id="sec-add">
+  <div class="hd">
+    <h1>新增紀錄</h1>
+    <div class="tabs" id="atabs">
+      <div class="tab active" data-f="出貨">出貨</div>
+      <div class="tab" data-f="進貨">進貨</div>
+      <div class="tab" data-f="換匯">換匯</div>
+      <div class="tab" data-f="稅金">代付稅金</div>
+      <div class="tab" data-f="其他">其他</div>
+    </div>
+  </div>
+  <div class="ct">
+    <!-- 出貨 -->
+    <div id="form-出貨">
+      <div class="fg"><label>日期</label><input type="date" id="s-date"></div>
+      <div class="fg"><label>廠商</label><div class="acw"><input type="text" id="s-vendor" placeholder="廠商名稱" autocomplete="off"><div class="acl" id="s-vendor-ac"></div></div></div>
+      <div class="fg"><label>航空公司</label><select id="s-airline"><option value="">選擇航空公司</option><option>長榮 EVA</option><option>華航 CI</option><option>國泰 CX</option><option>日航 JL</option><option>法航 AF</option><option>漢莎 LH</option><option>小樹點</option><option>其他</option></select></div>
+      <div class="row2">
+        <div class="fg"><label>哩程數（萬）</label><input type="number" id="s-miles" placeholder="5" inputmode="decimal" step="0.1"></div>
+        <div class="fg"><label>單價（RMB/萬哩）</label><input type="number" id="s-up" placeholder="380" inputmode="decimal"></div>
+      </div>
+      <div class="fg"><label>總金額（RMB）</label><input type="number" id="s-total" class="calc" placeholder="自動計算，可手動覆蓋" inputmode="decimal"></div>
+      <div class="fg"><label>備註</label><input type="text" id="s-note" placeholder="選填"></div>
+      <button class="btn" onclick="submit('出貨')">儲存出貨</button>
+    </div>
+    <!-- 進貨 -->
+    <div id="form-進貨" style="display:none">
+      <div class="fg"><label>日期</label><input type="date" id="b-date"></div>
+      <div class="fg"><label>賣家</label><div class="acw"><input type="text" id="b-seller" placeholder="賣家姓名" autocomplete="off"><div class="acl" id="b-seller-ac"></div></div></div>
+      <div class="fg"><label>航空公司</label><select id="b-airline"><option value="">選擇航空公司</option><option>長榮 EVA</option><option>華航 CI</option><option>國泰 CX</option><option>日航 JL</option><option>法航 AF</option><option>漢莎 LH</option><option>小樹點</option><option>其他</option></select></div>
+      <div class="row2">
+        <div class="fg"><label>哩程數（萬）</label><input type="number" id="b-miles" placeholder="5" inputmode="decimal" step="0.1"></div>
+        <div class="fg"><label>單價（TWD/哩）</label><input type="number" id="b-up" placeholder="0.28" inputmode="decimal" step="0.001"></div>
+      </div>
+      <div class="fg"><label>總成本（TWD）</label><input type="number" id="b-total" class="calc" placeholder="自動計算，可手動覆蓋" inputmode="decimal"></div>
+      <div class="fg"><label>付款帳戶</label><div class="acw"><input type="text" id="b-pay" placeholder="從哪個帳戶付款" autocomplete="off"><div class="acl" id="b-pay-ac"></div></div></div>
+      <div class="fg"><label>備註</label><input type="text" id="b-note" placeholder="選填"></div>
+      <button class="btn" onclick="submit('進貨')">儲存進貨</button>
+    </div>
+    <!-- 換匯 -->
+    <div id="form-換匯" style="display:none">
+      <div class="fg"><label>日期</label><input type="date" id="x-date"></div>
+      <div class="fg"><label>換匯管道</label><div class="acw"><input type="text" id="x-ch" placeholder="換匯管道" autocomplete="off"><div class="acl" id="x-ch-ac"></div></div></div>
+      <div class="row2">
+        <div class="fg"><label>人民幣（CNY）</label><input type="number" id="x-rmb" placeholder="CNY" inputmode="decimal"></div>
+        <div class="fg"><label>台幣（TWD）</label><input type="number" id="x-twd" placeholder="TWD" inputmode="decimal"></div>
+      </div>
+      <div class="fg"><label>匯率（TWD/CNY）</label><input type="number" id="x-rate" class="calc" placeholder="自動計算" inputmode="decimal" step="0.001"></div>
+      <div class="fg"><label>收款帳戶</label><div class="acw"><input type="text" id="x-acc" placeholder="台幣匯入哪個帳戶" autocomplete="off"><div class="acl" id="x-acc-ac"></div></div></div>
+      <div class="fg">
+        <label>款項來自廠商 <span style="font-size:11px;color:#999;font-weight:400">（選填，自動扣除應收帳款）</span></label>
+        <select id="x-from" style="width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid #e5e5ea;background:#fff;font-size:15px;color:var(--txt);appearance:none;-webkit-appearance:none" onchange="document.getElementById('x-from-hint').textContent=this.value?'將從應收帳款扣除 ¥'+document.getElementById('x-rmb').value:''">
+          <option value="">— 不選 —</option>
+        </select>
+        <div id="x-from-hint" style="font-size:11px;color:#888;margin-top:4px"></div>
+      </div>
+      <div class="fg"><label>備註</label><input type="text" id="x-note" placeholder="選填"></div>
+      <button class="btn" onclick="submit('換匯')">儲存換匯</button>
+    </div>
+    <!-- 稅金 -->
+    <div id="form-稅金" style="display:none">
+      <div class="fg"><label>日期</label><input type="date" id="t-date"></div>
+      <div class="fg"><label>廠商</label><div class="acw"><input type="text" id="t-vendor" placeholder="廠商名稱" autocomplete="off"><div class="acl" id="t-vendor-ac"></div></div></div>
+      <div class="row2">
+        <div class="fg"><label>刷卡金額（TWD）</label><input type="number" id="t-twd" placeholder="TWD" inputmode="decimal"></div>
+        <div class="fg"><label>廠商回款（RMB）</label><input type="number" id="t-rmb" placeholder="RMB" inputmode="decimal"></div>
+      </div>
+      <div class="fg"><label>刷卡帳戶</label><div class="acw"><input type="text" id="t-card" placeholder="刷卡帳戶/信用卡" autocomplete="off"><div class="acl" id="t-card-ac"></div></div></div>
+      <div class="fg"><label>備註</label><input type="text" id="t-note" placeholder="航班等資訊"></div>
+      <button class="btn" onclick="submit('稅金')">儲存稅金</button>
+    </div>
+    <!-- 其他 -->
+    <div id="form-其他" style="display:none">
+      <div class="fg"><label>日期</label><input type="date" id="o-date"></div>
+      <div class="fg"><label>方向</label>
+        <div class="seg" id="o-dir-seg">
+          <div class="seg-opt active" data-v="支出" onclick="setSeg('o-dir-seg',this)">－ 支出</div>
+          <div class="seg-opt" data-v="收入" onclick="setSeg('o-dir-seg',this)">＋ 收入</div>
+        </div>
+      </div>
+      <div class="fg"><label>帳戶</label><div class="acw"><input type="text" id="o-acc" placeholder="哪個帳戶" autocomplete="off"><div class="acl" id="o-acc-ac"></div></div></div>
+      <div class="fg"><label>金額（TWD）</label><input type="number" id="o-amt" placeholder="金額" inputmode="decimal"></div>
+      <div class="fg"><label>說明</label><input type="text" id="o-desc" placeholder="例：薪資、轉帳、個人支出…"></div>
+      <button class="btn" onclick="submit('其他')">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== ACCOUNTS ========== -->
+<div class="sec" id="sec-acc">
+  <div class="hd"><h1>帳戶</h1></div>
+  <div class="ct" id="acc-list"></div>
+</div>
+
+<!-- ========== RECORDS ========== -->
+<div class="sec" id="sec-rec">
+  <div class="hd">
+    <h1>交易紀錄</h1>
+    <div style="padding:10px 0 4px">
+      <input type="search" id="rec-search" placeholder="搜尋卡號、乘客、賣家、廠商…" style="border-radius:10px;padding:9px 14px;font-size:15px;background:#f2f2f7;border:none" oninput="renderRecords()">
+    </div>
+    <div style="padding:0 0 6px">
+      <select id="rec-month" style="width:100%;padding:9px 14px;font-size:14px;font-weight:500;background:#f2f2f7;border:none;border-radius:10px;color:var(--txt);-webkit-appearance:none;appearance:none" onchange="curMonth=this.value;renderRecords()">
+        <option value="">全部月份</option>
+      </select>
+    </div>
+    <div class="tabs" id="ftabs">
+      <div class="tab active" data-f2="全部">全部</div>
+      <div class="tab" data-f2="出貨">出貨</div>
+      <div class="tab" data-f2="進貨">進貨</div>
+      <div class="tab" data-f2="換匯">換匯</div>
+      <div class="tab" data-f2="稅金">稅金</div>
+      <div class="tab" data-f2="其他">其他</div>
+    </div>
+  </div>
+  <div class="ct" id="rec-list"></div>
+</div>
+
+<!-- ========== SUMMARY ========== -->
+<div class="sec" id="sec-sum">
+  <div class="hd"><h1>概覽</h1></div>
+  <div class="ct">
+    <button id="sync-btn" class="btn" style="margin-bottom:10px;border-radius:12px" onclick="syncCloud()">↻ 雲端同步</button>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn-export" style="flex:1;margin:0" onclick="exportJSON()">備份 JSON</button>
+      <button class="btn-export" style="flex:1;margin:0" onclick="openImport()">匯入資料</button>
+    </div>
+    <div class="rate-bar">
+      <label>新增紀錄匯率</label>
+      <input type="number" id="est-rate" value="4.7" step="0.01" inputmode="decimal" onchange="renderSummary()" oninput="renderSummary()">
+      <span style="font-size:12px;color:var(--txt3);white-space:nowrap">TWD/RMB</span>
+    </div>
+    <div id="sum-body"></div>
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<div class="bnav">
+  <div class="ni active" data-sec="add">
+    <div class="ni-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
+    <span class="ni-lbl">新增</span>
+  </div>
+  <div class="ni" data-sec="acc">
+    <div class="ni-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="3"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+    <span class="ni-lbl">帳戶</span>
+  </div>
+  <div class="ni" data-sec="rec">
+    <div class="ni-icon"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 3 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg></div>
+    <span class="ni-lbl">紀錄</span>
+  </div>
+  <div class="ni" data-sec="sum">
+    <div class="ni-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+    <span class="ni-lbl">概覽</span>
+  </div>
+</div>
+
+<!-- Add Account Modal -->
+<div class="modal-bg" id="modal-acc">
+  <div class="modal" style="background:#f2f2f7">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-acc-title">新增帳戶</div>
+    <div class="fg"><label>帳戶名稱</label><div class="acw"><input type="text" id="ma-name" placeholder="例：玉山A" autocomplete="off"><div class="acl" id="ma-name-ac"></div></div></div>
+    <div class="fg"><label>類型</label>
+      <select id="ma-type">
+        <option value="銀行">銀行</option>
+        <option value="電子支付">電子支付</option>
+        <option value="現金">現金</option>
+        <option value="借出">借出/代管</option>
+        <option value="其他">其他</option>
+      </select>
+    </div>
+    <div class="fg"><label>目前餘額（TWD）</label><input type="number" id="ma-bal" placeholder="從 Moze 輸入目前金額" inputmode="decimal"></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeAccModal()">取消</button>
+      <button class="btn btn-sm" style="flex:1" onclick="saveAccount()">儲存</button>
+    </div>
+    <div id="ma-delete-wrap" style="display:none;margin-top:10px">
+      <button class="btn btn-danger btn-sm" style="width:100%" onclick="deleteAccount()">刪除此帳戶</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-bg" id="modal-import">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">匯入資料</div>
+    <p style="font-size:13px;color:var(--txt2);margin-bottom:14px;text-align:center">貼上 Claude 給的 JSON，或選擇備份檔案</p>
+    <div class="fg"><textarea id="import-text" style="height:140px" placeholder="貼上 JSON..."></textarea></div>
+    <label style="display:block;text-align:center;padding:12px;background:var(--bg3);color:var(--blue);border:1px solid var(--border-hi);border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:12px">選擇 JSON 檔案<input type="file" accept=".json" id="import-file" style="display:none" onchange="readFile(this)"></label>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeImport()">取消</button>
+      <button class="btn btn-sm" style="flex:1" onclick="doImport()">匯入</button>
+    </div>
+  </div>
+</div>
+
+<!-- Record Detail Modal -->
+<div class="modal-bg" id="modal-deal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-deal-title">交易明細</div>
+    <div id="modal-deal-body"></div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:14px;width:100%" onclick="closeRecordDetail()">關閉</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── Firebase ──────────────────────────────────────────────
+const FB='https://miles-salary-default-rtdb.firebaseio.com/data.json';
+
+async function syncCloud(){
+  const btn=document.getElementById('sync-btn');
+  if(btn){btn.textContent='同步中…';btn.disabled=true;}
+  try{
+    // 1. 拉雲端資料
+    const res=await fetch(FB);
+    if(!res.ok){
+      const txt=await res.text();
+      throw new Error(`讀取失敗 ${res.status}: ${txt.slice(0,80)}`);
+    }
+    const cloud=await res.json();
+
+    // 2. 合併 records（雲端優先：雲端版本為主，本地補充雲端沒有的新紀錄）
+    const localRecs=getRecs();
+    const cloudMap=new Map(Array.isArray(cloud?.records)?cloud.records.map(r=>[r.id,r]):[]);
+    const localOnlyRecs=localRecs.filter(r=>!cloudMap.has(r.id));
+    const mergedRecs=[...cloudMap.values(),...localOnlyRecs].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.id-a.id));
+
+    // 3. 合併 accounts（雲端優先）
+    const localAccs=getAccounts();
+    const cloudAccMap=new Map(Array.isArray(cloud?.accounts)?cloud.accounts.map(a=>[a.id,a]):[]);
+    const localOnlyAccs=localAccs.filter(a=>!cloudAccMap.has(a.id));
+    const mergedAccs=[...cloudAccMap.values(),...localOnlyAccs];
+
+    // 4. 合併 rates / profits（本地優先）
+    const mergedRates={...(cloud?.rates||{}),...getRates()};
+    const mergedProfits={...(cloud?.profits||{}),...getProfits()};
+
+    saveRecs(mergedRecs);
+    saveAccounts(mergedAccs);
+    saveRates(mergedRates);
+    saveProfits(mergedProfits);
+
+    // 5. 上傳合併後的資料
+    const putRes=await fetch(FB,{method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({records:mergedRecs,accounts:mergedAccs,rates:mergedRates,profits:mergedProfits,synced:new Date().toISOString()})});
+    if(!putRes.ok){
+      const txt=await putRes.text();
+      throw new Error(`上傳失敗 ${putRes.status}: ${txt.slice(0,80)}`);
+    }
+
+    localStorage.setItem('ml_last_sync',new Date().toLocaleString('zh-TW'));
+    renderSummary();
+    toast(`✓ 同步完成（${mergedRecs.length} 筆）`);
+  }catch(e){
+    console.error('syncCloud error:',e);
+    alert('同步失敗：' + e.message);
+  }finally{
+    if(btn){btn.textContent='↻ 雲端同步';btn.disabled=false;}
+  }
+}
+
+// ─── Storage ───────────────────────────────────────────────
+const RK='ml_rec', AK='ml_ac', ACK='ml_accounts', RTK='ml_rates';
+const getRecs=()=>JSON.parse(localStorage.getItem(RK)||'[]');
+const saveRecs=d=>localStorage.setItem(RK,JSON.stringify(d));
+const getAC=()=>JSON.parse(localStorage.getItem(AK)||'{}');
+const saveAC=d=>localStorage.setItem(AK,JSON.stringify(d));
+const getAccounts=()=>JSON.parse(localStorage.getItem(ACK)||'[]');
+const saveAccounts=d=>localStorage.setItem(ACK,JSON.stringify(d));
+const getRates=()=>JSON.parse(localStorage.getItem(RTK)||'{}');
+const saveRates=d=>localStorage.setItem(RTK,JSON.stringify(d));
+function setMonthRate(ym,val){const r=getRates();r[ym]=parseFloat(val)||4.7;saveRates(r);renderSummary();}
+const PRK='ml_profits';
+const getProfits=()=>JSON.parse(localStorage.getItem(PRK)||'{}');
+const saveProfits=d=>localStorage.setItem(PRK,JSON.stringify(d));
+const ARK='ml_ar';
+const getAR=()=>JSON.parse(localStorage.getItem(ARK)||'{}');
+const saveAR=d=>localStorage.setItem(ARK,JSON.stringify(d));
+
+function learn(field,val){
+  if(!val||!val.trim())return;
+  const d=getAC(); if(!d[field])d[field]=[];
+  const v=val.trim();
+  d[field]=[v,...d[field].filter(x=>x!==v)].slice(0,60);
+  saveAC(d);
+}
+
+(function(){
+  const d=getAC();
+  if(d._seeded2)return;
+  d.vendor=['小平個人','小平群組','陳愷幫出','山西','袁','佳佳','上海','唐磊','肖逸'];
+  d.payment=['王道','兆豐','台新 Richart','富邦','中信','Lina bank','玉山A','玉山B','聯邦','國泰','永豐','Newnew Bank','Line Pay','遠東','ipass','全支付','現金'];
+  d.card=['王道','兆豐','台新 Richart','富邦','中信','Lina bank','玉山A','玉山B','聯邦','國泰','永豐','現金'];
+  d.channel=['管道A','管道B'];
+  d._seeded2=true;
+  saveAC(d);
+})();
+
+// ─── AR init: seed known outstanding & mark existing records ─
+(function(){
+  if(!localStorage.getItem(ARK)){
+    saveAR({'唐磊':{owed:33736},'小平個人':{owed:12047},'小平群組':{owed:6655},'山西':{owed:0},'袁':{owed:0},'佳佳':{owed:0},'陳愷幫出':{owed:0},'上海':{owed:0},'肖逸':{owed:0}});
+  }
+  // Mark all existing 出貨 as ar_added so they don't double-count with seeded values
+  const recs=getRecs();
+  let changed=false;
+  const updated=recs.map(r=>{
+    if(r.type==='出貨'&&r.ar_added===undefined){changed=true;return{...r,ar_added:true};}
+    return r;
+  });
+  if(changed)saveRecs(updated);
+})();
+
+// ─── Date ──────────────────────────────────────────────────
+const today=()=>new Date().toLocaleDateString('sv-SE');
+const setDates=()=>['s-date','b-date','x-date','t-date','o-date'].forEach(id=>{
+  const el=document.getElementById(id); if(el&&!el.value)el.value=today();
+});
+
+// ─── Autocomplete ──────────────────────────────────────────
+function setupAC(inpId,lstId,field){
+  const inp=document.getElementById(inpId);
+  const lst=document.getElementById(lstId);
+  if(!inp)return;
+  inp.addEventListener('input',()=>showAC(inp,lst,field));
+  inp.addEventListener('focus',()=>showAC(inp,lst,field));
+  inp.addEventListener('blur',()=>setTimeout(()=>lst.style.display='none',180));
+}
+function showAC(inp,lst,field){
+  const q=inp.value.toLowerCase();
+  const accNames=getAccounts().map(a=>a.name);
+  const stored=getAC()[field]||[];
+  const all=[...new Set([...stored,...accNames])];
+  const opts=all.filter(v=>!q||v.toLowerCase().includes(q));
+  if(!opts.length){lst.style.display='none';return;}
+  lst.innerHTML=opts.slice(0,8).map(v=>`<div class="aci" onmousedown="pickAC(event,'${inp.id}','${lst.id}','${v.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')"><b>${esc(v)}</b></div>`).join('');
+  lst.style.display='block';
+}
+function pickAC(e,iid,lid,val){e.preventDefault();document.getElementById(iid).value=val;document.getElementById(lid).style.display='none';}
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+// ─── Segment ───────────────────────────────────────────────
+function setSeg(segId,el){
+  document.querySelectorAll('#'+segId+' .seg-opt').forEach(o=>o.classList.remove('active'));
+  el.classList.add('active');
+}
+function segVal(segId){
+  const a=document.querySelector('#'+segId+' .seg-opt.active');
+  return a?a.dataset.v:'';
+}
+
+// ─── Auto calc ─────────────────────────────────────────────
+function setupCalc(){
+  const wire=(a,b,out,fn)=>[a,b].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{
+    const va=parseFloat(document.getElementById(a)?.value),vb=parseFloat(document.getElementById(b)?.value);
+    if(va&&vb)document.getElementById(out).value=fn(va,vb);
+  }));
+  wire('s-miles','s-up','s-total',(m,r)=>(m*r).toFixed(0));
+  wire('b-miles','b-up','b-total',(m,r)=>(m*10000*r).toFixed(0));
+  wire('x-twd','x-rmb','x-rate',(t,r)=>(t/r).toFixed(4));
+}
+
+const v=id=>(document.getElementById(id)?.value||'').trim();
+
+// ─── Submit ────────────────────────────────────────────────
+function submit(type){
+  const rec={id:Date.now(),type};
+  if(type==='出貨'){
+    if(!v('s-vendor')){toast('請填寫廠商');return;}
+    Object.assign(rec,{date:v('s-date')||today(),vendor:v('s-vendor'),airline:v('s-airline'),miles:v('s-miles'),unitprice:v('s-up'),total:v('s-total'),note:v('s-note'),ar_added:true});
+    learn('vendor',rec.vendor);
+    // Auto-add to AR: create vendor entry if not exists, add to owed
+    {const ar=getAR();if(!ar[rec.vendor])ar[rec.vendor]={owed:0};ar[rec.vendor].owed=(ar[rec.vendor].owed||0)+(parseFloat(rec.total)||0);saveAR(ar);}
+    clear('s-vendor','s-miles','s-up','s-total','s-note');
+    document.getElementById('s-airline').value='';
+  }else if(type==='進貨'){
+    if(!v('b-total')&&(!v('b-miles')||!v('b-up'))){toast('請填寫金額');return;}
+    Object.assign(rec,{date:v('b-date')||today(),seller:v('b-seller'),airline:v('b-airline'),miles:v('b-miles'),unitprice:v('b-up'),total:v('b-total'),payment:v('b-pay'),note:v('b-note')});
+    learn('seller',rec.seller);learn('payment',rec.payment);
+    clear('b-seller','b-miles','b-up','b-total','b-pay','b-note');
+    document.getElementById('b-airline').value='';
+  }else if(type==='換匯'){
+    if(!v('x-ch')){toast('請填寫換匯管道');return;}
+    const fromVendor=document.getElementById('x-from')?.value||'';
+    Object.assign(rec,{date:v('x-date')||today(),channel:v('x-ch'),rmb:v('x-rmb'),twd:v('x-twd'),rate:v('x-rate'),account:v('x-acc'),from_vendor:fromVendor,note:v('x-note')});
+    learn('channel',rec.channel);learn('payment',rec.account);
+    // Deduct from AR when vendor is specified
+    if(fromVendor&&rec.rmb){const ar=getAR();if(ar[fromVendor]){ar[fromVendor].owed=(ar[fromVendor].owed||0)-(parseFloat(rec.rmb)||0);saveAR(ar);}}
+    clear('x-ch','x-rmb','x-twd','x-rate','x-acc','x-note');
+    if(document.getElementById('x-from'))document.getElementById('x-from').value='';
+  }else if(type==='稅金'){
+    if(!v('t-vendor')){toast('請填寫廠商');return;}
+    Object.assign(rec,{date:v('t-date')||today(),vendor:v('t-vendor'),twd:v('t-twd'),rmb:v('t-rmb'),card:v('t-card'),note:v('t-note')});
+    learn('vendor',rec.vendor);learn('card',rec.card);learn('payment',rec.card);
+    clear('t-vendor','t-twd','t-rmb','t-card','t-note');
+  }else if(type==='其他'){
+    if(!v('o-acc')||!v('o-amt')){toast('請填寫帳戶和金額');return;}
+    Object.assign(rec,{date:v('o-date')||today(),dir:segVal('o-dir-seg'),account:v('o-acc'),amount:v('o-amt'),desc:v('o-desc')});
+    learn('payment',rec.account);
+    clear('o-acc','o-amt','o-desc');
+  }
+  const recs=getRecs(); recs.unshift(rec); saveRecs(recs);
+  setDates(); toast('✓ 已儲存');
+}
+function clear(...ids){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value='';})}
+
+// ─── Account balance ───────────────────────────────────────
+function getBalance(accName){
+  const accounts=getAccounts();
+  const acc=accounts.find(a=>a.name===accName);
+  const start=acc?parseFloat(acc.startBalance)||0:0;
+  const recs=getRecs();
+  let delta=0;
+  recs.forEach(r=>{
+    if(r.type==='進貨'&&r.payment===accName) delta-=parseFloat(r.total)||0;
+    if(r.type==='換匯'&&r.account===accName) delta+=parseFloat(r.twd)||0;
+    if(r.type==='稅金'&&r.card===accName) delta-=parseFloat(r.twd)||0;
+    if(r.type==='其他'&&r.account===accName){
+      if(r.dir==='收入') delta+=parseFloat(r.amount)||0;
+      else delta-=parseFloat(r.amount)||0;
+    }
+  });
+  return start+delta;
+}
+
+// ─── Render Accounts ───────────────────────────────────────
+function renderAccounts(){
+  const accounts=getAccounts();
+  const el=document.getElementById('acc-list');
+  if(!accounts.length){
+    el.innerHTML=`<div class="empty">還沒有帳戶<br><br><button class="btn" onclick="openAccModal()">新增第一個帳戶</button></div>`;
+    return;
+  }
+  const types=['銀行','電子支付','現金','借出','其他'];
+  const grouped={};
+  types.forEach(t=>grouped[t]=[]);
+  accounts.forEach(a=>{const t=a.type||'其他';if(!grouped[t])grouped[t]=[];grouped[t].push(a);});
+  const totalBal=accounts.reduce((s,a)=>s+getBalance(a.name),0);
+  let html=`<div class="acc-total"><div class="acc-total-label">總資產</div><div class="acc-total-val">NT$ ${fmt(totalBal)}</div></div>`;
+  types.forEach(t=>{
+    if(!grouped[t]||!grouped[t].length)return;
+    const subtotal=grouped[t].reduce((s,a)=>s+getBalance(a.name),0);
+    html+=`<div class="acc-section"><div class="acc-section-title">${t} &nbsp;NT$ ${fmt(subtotal)}</div>`;
+    grouped[t].forEach(a=>{
+      const bal=getBalance(a.name);
+      const cls=bal>=0?'pos':'neg';
+      html+=`<div class="acc-row" onclick="openAccModal(${a.id})">
+        <span class="acc-name">${esc(a.name)}</span>
+        <span class="acc-bal ${cls}">NT$ ${fmt(bal)}</span>
+      </div>`;
+    });
+    html+='</div>';
+  });
+  html+=`<button class="btn btn-ghost" style="margin-top:4px" onclick="openAccModal()">＋ 新增帳戶</button>`;
+  html+=`<div style="height:10px"></div><button class="btn-export" onclick="exportCSV()">匯出 CSV</button>`;
+  el.innerHTML=html;
+}
+
+// ─── Account Modal ─────────────────────────────────────────
+let editAccId=null;
+function openAccModal(id){
+  editAccId=id||null;
+  const modal=document.getElementById('modal-acc');
+  const delWrap=document.getElementById('ma-delete-wrap');
+  if(id){
+    const acc=getAccounts().find(a=>a.id===id);
+    if(!acc)return;
+    document.getElementById('modal-acc-title').textContent='編輯帳戶';
+    document.getElementById('ma-name').value=acc.name;
+    document.getElementById('ma-type').value=acc.type||'銀行';
+    document.getElementById('ma-bal').value=acc.startBalance||'';
+    delWrap.style.display='block';
+  }else{
+    document.getElementById('modal-acc-title').textContent='新增帳戶';
+    document.getElementById('ma-name').value='';
+    document.getElementById('ma-type').value='銀行';
+    document.getElementById('ma-bal').value='';
+    delWrap.style.display='none';
+  }
+  modal.classList.add('open');
+}
+function closeAccModal(){document.getElementById('modal-acc').classList.remove('open');}
+function saveAccount(){
+  const name=document.getElementById('ma-name').value.trim();
+  if(!name){toast('請填帳戶名稱');return;}
+  const type=document.getElementById('ma-type').value;
+  const startBalance=parseFloat(document.getElementById('ma-bal').value)||0;
+  const accounts=getAccounts();
+  if(editAccId){
+    const idx=accounts.findIndex(a=>a.id===editAccId);
+    if(idx>=0) accounts[idx]={...accounts[idx],name,type,startBalance};
+  }else{
+    accounts.push({id:Date.now(),name,type,startBalance});
+  }
+  saveAccounts(accounts);
+  learn('payment',name);
+  closeAccModal();
+  renderAccounts();
+  toast('✓ 帳戶已儲存');
+}
+function deleteAccount(){
+  if(!editAccId)return;
+  if(!confirm('刪除這個帳戶？（不影響已記錄的交易）'))return;
+  saveAccounts(getAccounts().filter(a=>a.id!==editAccId));
+  closeAccModal();
+  renderAccounts();
+  toast('已刪除');
+}
+document.getElementById('modal-acc').addEventListener('click',function(e){if(e.target===this)closeAccModal();});
+setupAC('ma-name','ma-name-ac','payment');
+
+// ─── Render Records ────────────────────────────────────────
+let curFilter='全部';
+let curMonth='';
+function gotoMonth(ym){
+  curMonth=ym;
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  document.querySelector('[data-sec="rec"]').classList.add('active');
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-rec').classList.add('active');
+  renderRecords();
+}
+function renderRecords(){
+  const all=getRecs();
+
+  // populate month dropdown
+  const recMonthEl=document.getElementById('rec-month');
+  if(recMonthEl){
+    const months=[...new Set(all.map(r=>r.date?.substring(0,7)).filter(Boolean))].sort().reverse();
+    recMonthEl.innerHTML=`<option value="">全部月份</option>`+months.map(ym=>{
+      const [y,m]=ym.split('-');
+      return `<option value="${ym}">${y}年${parseInt(m)}月</option>`;
+    }).join('');
+    recMonthEl.value=curMonth;
+  }
+
+  const q=(document.getElementById('rec-search')?.value||'').toLowerCase().trim();
+  let list=curFilter==='全部'?all:all.filter(r=>r.type===curFilter);
+  if(curMonth)list=list.filter(r=>r.date?.startsWith(curMonth));
+  if(q)list=list.filter(r=>{
+    const fields=[r.vendor,r.seller,r.note,r.airline,r.channel,r.date,r.card,r.account,r.desc,r.payment].filter(Boolean).join(' ').toLowerCase();
+    return fields.includes(q);
+  });
+  const el=document.getElementById('rec-list');
+  if(!list.length){el.innerHTML='<div class="empty">還沒有紀錄</div>';return;}
+
+  // month profit summary bar
+  let summaryBar='';
+  if(curMonth){
+    const allRecs=getRecs();
+    const net=getMonthNet(curMonth,allRecs,getProfits(),getRates(),parseFloat(document.getElementById('est-rate')?.value)||4.7);
+    const sells=list.filter(r=>r.type==='出貨');
+    const [y,m]=curMonth.split('-');
+    const cls=net>=0?'green':'red';
+    const confirmed=getProfits()[curMonth]!==undefined;
+    summaryBar=`<div style="background:linear-gradient(135deg,#f0f6ff,#f5f0ff);border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:13px;color:var(--txt2);font-weight:600">${y}年${parseInt(m)}月 · ${confirmed?'確認':'估算'}淨利</span>
+      <span style="font-size:17px;font-weight:800" class="${cls}">NT$ ${fmt(net)}</span>
+    </div>`;
+  }
+
+  const cards=list.map(r=>{
+    let main='',sub='',amt='';
+    if(r.type==='出貨'){
+      main=esc([r.vendor,r.airline].filter(Boolean).join(' · '));
+      sub=[r.miles&&r.miles+'萬哩',r.unitprice&&'@'+r.unitprice+'/萬'].filter(Boolean).join(' ');
+      if(r.profit_twd!==undefined&&r.profit_twd!==''&&r.profit_twd!==null){
+        amt=`<span class="blue">NT$ ${fmt(parseFloat(r.twd)||0)}</span><br><span class="green" style="font-size:11px">淨 ${fmt(parseFloat(r.profit_twd))}</span>`;
+      }else{
+        amt=r.total?`<span class="blue">+¥${r.total}</span>`:'';
+      }
+    }
+    else if(r.type==='進貨'){main=esc([r.seller,r.airline].filter(Boolean).join(' · '));sub=[r.miles&&r.miles+'萬哩',r.unitprice&&'@'+r.unitprice+'/哩',r.payment||r.card].filter(Boolean).join(' · ');amt=r.total?`<span class="red">-NT$${r.total}</span>`:'';}
+    else if(r.type==='換匯'){main=esc(r.channel||'');sub=[r.rate&&'匯率'+r.rate,r.account,r.from_vendor&&'來自 '+r.from_vendor].filter(Boolean).join(' · ');amt=(r.rmb||r.twd)?`<span class="orange">¥${r.rmb}→$${r.twd}</span>`:'';}
+    else if(r.type==='稅金'){main=esc(r.vendor||'');sub=[r.card,r.note].filter(Boolean).join(' · ');amt=[r.twd&&`<span class="red">-NT$${r.twd}</span>`,r.rmb&&`<span class="blue">+¥${r.rmb}</span>`].filter(Boolean).join('<br>');}
+    else if(r.type==='其他'){main=esc(r.account||'');sub=esc(r.desc||'');const sign=r.dir==='收入'?'+':'-';const cls=r.dir==='收入'?'green':'red';amt=r.amount?`<span class="${cls}">${sign}NT$${r.amount}</span>`:'';}
+    return `<div class="card" onclick="showRecordDetail(${r.id})" style="cursor:pointer"><div class="rc-top"><span class="badge b-${r.type}">${r.type}</span><span class="rc-date">${r.date}</span><button class="rc-del" onclick="event.stopPropagation();delRec(${r.id})">刪除</button></div><div class="rc-body"><div><div class="rc-main">${main}</div><div class="rc-sub">${sub}${r.note&&r.type!=='稅金'&&r.type!=='其他'?'<br><i>'+esc(r.note)+'</i>':''}</div></div><div class="rc-amt">${amt}</div></div></div>`;
+  }).join('');
+  el.innerHTML=summaryBar+`<button class="btn-export" onclick="exportCSV()">${curFilter==='全部'?'匯出全部 CSV':'匯出此類 CSV'}</button>`+cards;
+}
+function delRec(id){
+  if(!confirm('刪除這筆紀錄？'))return;
+  saveRecs(getRecs().filter(r=>r.id!==id));
+  renderRecords();
+  if(document.getElementById('sec-acc').classList.contains('active'))renderAccounts();
+}
+
+// ─── Month net helper ──────────────────────────────────────
+function getActualRate(ym,recs,defRate){
+  // Weighted average of actual 換匯 records this month; fall back to defRate
+  const ex=recs.filter(r=>r.type==='換匯'&&r.date?.startsWith(ym)&&r.rmb&&r.twd);
+  if(!ex.length)return defRate;
+  const rmb=ex.reduce((s,r)=>s+(parseFloat(r.rmb)||0),0);
+  const twd=ex.reduce((s,r)=>s+(parseFloat(r.twd)||0),0);
+  return rmb>0?twd/rmb:defRate;
+}
+function getMonthNet(ym,recs,profits,storedRates,defRate){
+  if(profits[ym]!==undefined) return profits[ym];
+  const hasPT=r=>r.profit_twd!==undefined&&r.profit_twd!==''&&r.profit_twd!==null;
+  const mr=recs.filter(r=>r.date?.startsWith(ym));
+  const sells=mr.filter(r=>r.type==='出貨');
+  const buys=mr.filter(r=>r.type==='進貨');
+  const withP=sells.filter(hasPT);
+  const withoutP=sells.filter(r=>!hasPT(r));
+  // Priority: actual 換匯 rate > per-month stored rate > estimated default
+  const mrate=storedRates[ym]??getActualRate(ym,recs,defRate);
+  const directP=withP.reduce((s,r)=>s+(parseFloat(r.profit_twd)||0),0);
+  const calcRev=withoutP.reduce((s,r)=>s+(r.twd?parseFloat(r.twd):(parseFloat(r.total)||0)*mrate),0);
+  const cost=buys.reduce((s,r)=>s+(parseFloat(r.total)||0),0);
+  return withP.length>0&&withoutP.length===0?directP:directP+calcRev-cost;
+}
+
+let rangeFrom='',rangeTo='';
+function calcRange(){
+  const fromVal=document.getElementById('range-from')?.value;
+  const toVal=document.getElementById('range-to')?.value;
+  const el=document.getElementById('range-result');
+  if(!el)return;
+  if(!fromVal||!toVal){el.innerHTML='<span style="color:var(--txt3)">選擇起訖日期</span>';return;}
+  const from=fromVal.substring(0,7);
+  const to=toVal.substring(0,7);
+  if(from>to){el.innerHTML='<span style="color:var(--txt3)">結束日期需晚於開始日期</span>';return;}
+  const recs=getRecs();
+  const profits=getProfits();
+  const storedRates=getRates();
+  const defRate=parseFloat(document.getElementById('est-rate')?.value)||4.7;
+  const allMonths=[...new Set([
+    ...recs.filter(r=>r.type==='出貨'||r.type==='進貨').map(r=>r.date?.substring(0,7)).filter(Boolean),
+    ...Object.keys(profits)
+  ])].sort();
+  const inRange=allMonths.filter(ym=>ym>=from&&ym<=to);
+  const total=inRange.reduce((s,ym)=>s+getMonthNet(ym,recs,profits,storedRates,defRate),0);
+  const cls=total>=0?'green':'red';
+  el.innerHTML=`<span class="${cls}" style="font-size:24px;font-weight:800">NT$ ${fmt(total)}</span><div style="font-size:12px;color:var(--txt3);margin-top:4px">${inRange.length} 個月合計</div>`;
+}
+
+function showRecordDetail(id){
+  const recs=getRecs();
+  const rec=recs.find(r=>r.id==id);
+  if(!rec)return;
+  const ym=rec.date?.substring(0,7)||'';
+  const storedRates=getRates();
+  const defRate=parseFloat(document.getElementById('est-rate')?.value)||4.7;
+  const mrate=storedRates[ym]??defRate;
+  const hasPT=r=>r.profit_twd!==undefined&&r.profit_twd!==''&&r.profit_twd!==null;
+
+  // Step 1: match by 8+ digit order numbers in note/card
+  const searchText=[rec.note,rec.card].filter(Boolean).join(' ');
+  const orderNums=(searchText.match(/\d{8,}/g)||[]);
+  let related=[],isBatch=false;
+  if(orderNums.length>0){
+    related=recs.filter(r=>{
+      if(r.id===rec.id)return false;
+      if(r.type!=='出貨'&&r.type!=='進貨')return false;
+      const rt=[r.note,r.card].filter(Boolean).join(' ');
+      return orderNums.some(n=>rt.includes(n));
+    });
+  }
+
+  // Step 1.5: match by passenger/client name token (e.g. "JIA/LI", "TANG/LEI", or Chinese name)
+  // Extract: all-caps "WORD/WORD" patterns and 2-4 char Chinese name sequences
+  if(related.length===0){
+    const latinNames=(searchText.match(/[A-Z]{2,}\/[A-Z]{2,}/g)||[]);
+    const chineseNames=(searchText.match(/[一-鿿]{2,4}/g)||[]).filter(n=>
+      !['進貨','出貨','批次','航空','里程','萬哩','萬里','含佑','聯航','華航','長榮','國泰','南航','東航','泰航'].includes(n)
+    );
+    const nameTokens=[...latinNames,...chineseNames];
+    if(nameTokens.length>0){
+      const nameMatched=recs.filter(r=>{
+        if(r.id===rec.id)return false;
+        if(r.type!=='出貨'&&r.type!=='進貨')return false;
+        if(r.date?.substring(0,7)!==ym)return false;
+        if(rec.airline&&r.airline&&r.airline!==rec.airline)return false;
+        const rt=[r.note,r.card].filter(Boolean).join(' ');
+        return nameTokens.some(t=>rt.includes(t));
+      });
+      if(nameMatched.length>0)related=nameMatched;
+    }
+  }
+
+  // Step 2: fallback — same vendor/airline/month when no order-number or name match
+  if(related.length===0&&(rec.type==='出貨'||rec.type==='進貨')){
+    const vendorKey=(rec.vendor||rec.seller||'').trim();
+    if(vendorKey){
+      related=recs.filter(r=>{
+        if(r.id===rec.id)return false;
+        if(r.type!=='出貨'&&r.type!=='進貨')return false;
+        if(r.date?.substring(0,7)!==ym)return false;
+        if(rec.airline&&r.airline&&r.airline!==rec.airline)return false;
+        const rText=[r.note,r.vendor,r.seller].filter(Boolean).join(' ');
+        return rText.toLowerCase().includes(vendorKey.toLowerCase());
+      });
+      if(related.length>0)isBatch=true;
+    }
+  }
+
+  // Calculate deal profit
+  let dealProfit=null,profitNote='';
+  if(rec.type==='出貨'){
+    if(hasPT(rec)){
+      dealProfit=parseFloat(rec.profit_twd);
+      profitNote='來自實際記錄';
+    }else if(rec.total&&related.length>0){
+      const buys=related.filter(r=>r.type==='進貨');
+      if(buys.length>0){
+        const rev=parseFloat(rec.total)*mrate;
+        if(!isBatch){
+          const cost=buys.reduce((s,r)=>s+(parseFloat(r.total)||0),0);
+          dealProfit=rev-cost;
+          profitNote=`¥${rec.total} × ${mrate} − NT$${fmt(cost)}`;
+        }else{
+          // pro-rate by miles across batch
+          const batchMiles=buys.reduce((s,r)=>s+(parseFloat(r.miles)||0),0);
+          const batchCost=buys.reduce((s,r)=>s+(parseFloat(r.total)||0),0);
+          const perW=batchMiles>0?batchCost/batchMiles:0;
+          const thisMiles=parseFloat(rec.miles)||0;
+          const cost=perW>0&&thisMiles>0?perW*thisMiles:batchCost;
+          dealProfit=rev-cost;
+          profitNote=`批次均攤 @NT$${perW.toFixed(0)}/萬哩`;
+        }
+      }
+    }
+  }else if(rec.type==='進貨'){
+    const allSells=related.filter(r=>r.type==='出貨');
+    const allBuys=[rec,...related.filter(r=>r.type==='進貨')];
+    if(allSells.length>0){
+      const sell=allSells[0];
+      if(!isBatch&&hasPT(sell)){
+        dealProfit=parseFloat(sell.profit_twd);
+        profitNote='來自出貨實際記錄';
+      }else{
+        const totalRev=allSells.reduce((s,r)=>s+(parseFloat(r.total)||0)*mrate,0);
+        const totalCost=allBuys.reduce((s,r)=>s+(parseFloat(r.total)||0),0);
+        dealProfit=totalRev-totalCost;
+        profitNote=isBatch?`批次總利潤（${allSells.length} 筆出貨）`:`¥${sell.total} × ${mrate} − NT$${fmt(totalCost)}`;
+      }
+    }
+  }
+
+  // Build display
+  const mainLine=rec.type==='出貨'?[rec.vendor,rec.airline].filter(Boolean).join(' · ')
+    :rec.type==='進貨'?[rec.seller,rec.airline].filter(Boolean).join(' · ')
+    :rec.vendor||rec.channel||rec.account||'';
+  const subLine=[rec.miles&&rec.miles+'萬哩',rec.unitprice&&'@'+rec.unitprice].filter(Boolean).join(' ');
+  const amtLine=rec.type==='出貨'
+    ?(hasPT(rec)?`<span class="blue">NT$ ${fmt(parseFloat(rec.twd)||0)}</span>`:(rec.total?`<span class="blue">+¥${rec.total}</span>`:''))
+    :rec.type==='進貨'?(rec.total?`<span class="red">-NT$${rec.total}</span>`:''):'';
+
+  // Related records (max 5, with overflow count)
+  let relatedHTML='';
+  if(related.length>0){
+    const show=related.slice(0,5);
+    const more=related.length-show.length;
+    relatedHTML='<div style="margin-top:14px"><div style="font-size:11px;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">'+(isBatch?'批次關聯記錄':'關聯記錄')+'</div>';
+    show.forEach(r=>{
+      const rm=r.type==='出貨'?[r.vendor,r.airline].filter(Boolean).join(' · '):[r.seller,r.airline].filter(Boolean).join(' · ');
+      const ra=r.type==='出貨'?(hasPT(r)?`<span class="blue">NT$${fmt(parseFloat(r.twd)||0)}</span>`:(r.total?`<span class="blue">+¥${r.total}</span>`:'')):(r.total?`<span class="red">-NT$${r.total}</span>`:'');
+      relatedHTML+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #f2f2f7;font-size:13px"><div><span class="badge b-${r.type}" style="font-size:10px;padding:2px 7px">${r.type}</span> <span style="font-weight:500">${esc(rm)}</span>${r.miles?` <span style="color:var(--txt3)">${r.miles}萬哩</span>`:''}</div><span style="font-weight:700">${ra}</span></div>`;
+    });
+    if(more>0)relatedHTML+=`<div style="padding:8px 0;font-size:12px;color:var(--txt3);text-align:center">…還有 ${more} 筆</div>`;
+    relatedHTML+='</div>';
+  }
+
+  const profitHTML=dealProfit!==null
+    ?`<div style="margin-top:16px;padding:16px;background:linear-gradient(135deg,#f0fff4,#e8f4ff);border-radius:14px;text-align:center">
+        <div style="font-size:11px;color:var(--txt2);font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">此筆淨利</div>
+        <div class="${dealProfit>=0?'green':'red'}" style="font-size:28px;font-weight:800;letter-spacing:-.5px">NT$ ${fmt(dealProfit)}</div>
+        ${profitNote?`<div style="font-size:11px;color:var(--txt3);margin-top:6px">${esc(profitNote)}</div>`:''}
+      </div>`
+    :(rec.type==='出貨'||rec.type==='進貨'?`<div style="margin-top:14px;padding:12px;background:#f9f9f9;border-radius:12px;text-align:center;color:var(--txt3);font-size:13px">未找到關聯記錄，無法計算單筆利潤</div>`:'');
+
+  document.getElementById('modal-deal-title').textContent=`${rec.type} · ${rec.date}`;
+  document.getElementById('modal-deal-body').innerHTML=`
+    <div style="background:#f9f9f9;border-radius:12px;padding:14px">
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px">${esc(mainLine)}</div>
+      ${subLine?`<div style="font-size:13px;color:var(--txt2);margin-bottom:4px">${subLine}</div>`:''}
+      ${rec.note?`<div style="font-size:12px;color:var(--txt3)">${esc(rec.note)}</div>`:''}
+      <div style="margin-top:10px;font-size:16px;font-weight:700">${amtLine}</div>
+    </div>
+    ${relatedHTML}${profitHTML}`;
+  document.getElementById('modal-deal').classList.add('open');
+}
+function closeRecordDetail(){document.getElementById('modal-deal').classList.remove('open');}
+
+// ─── Render Summary ────────────────────────────────────────
+function renderSummary(){
+  const recs=getRecs();
+  const rate=parseFloat(document.getElementById('est-rate')?.value)||4.7;
+  const sumF=(list,field)=>list.reduce((s,r)=>s+(parseFloat(r[field])||0),0);
+  const profits=getProfits();
+  const storedRates=getRates();
+
+  const recMonths=[...new Set(recs.filter(r=>r.type==='出貨'||r.type==='進貨').map(r=>r.date?.substring(0,7)).filter(Boolean))];
+  const months=[...new Set([...recMonths,...Object.keys(profits)])].sort().reverse();
+  let totalNet=0;
+  const inputStyle='flex:1;padding:9px 10px;font-size:14px;font-weight:500;border:1.5px solid #e5e5ea;border-radius:10px;background:#fff;color:var(--txt);-webkit-appearance:none';
+  const rfCurrent=document.getElementById('range-from')?.value||rangeFrom||'';
+  const rtCurrent=document.getElementById('range-to')?.value||rangeTo||today();
+
+  const monthCards=months.map(ym=>{
+    const net=getMonthNet(ym,recs,profits,storedRates,rate);
+    totalNet+=net;
+    const isConfirmed=profits[ym]!==undefined;
+    const mr=recs.filter(r=>r.date?.startsWith(ym));
+    const recsSell=mr.filter(r=>r.type==='出貨');
+    const recsBuy=mr.filter(r=>r.type==='進貨');
+    const [y,m]=ym.split('-');
+    const label=`${y}年${parseInt(m)}月`;
+    const cls=net>=0?'green':'red';
+    const taxR=mr.filter(r=>r.type==='稅金');
+    const taxLine=taxR.length?`<div class="sc-r"><span>代付稅金</span><span class="sc-v red">-NT$ ${fmt(sumF(taxR,'twd'))}</span></div>`:'';
+    const totalRecs=recsSell.length+recsBuy.length;
+
+    if(isConfirmed&&totalRecs===0){
+      return `<div class="sc-month">
+        <div class="sc-month-hd">
+          <span class="sc-month-title">${label}</span>
+          <span class="sc-month-net ${cls}">NT$ ${fmt(net)}</span>
+        </div>
+        <div class="sc-month-body">
+          <div class="sc-r"><span style="font-weight:600;color:var(--txt)">確認淨利</span><span class="sc-v ${cls}" style="font-size:15px">NT$ ${fmt(net)}</span></div>
+        </div>
+      </div>`;
+    }
+    if(isConfirmed){
+      return `<div class="sc-month">
+        <div class="sc-month-hd" onclick="gotoMonth('${ym}')" style="cursor:pointer">
+          <span class="sc-month-title">${label}</span>
+          <span style="display:flex;align-items:baseline;gap:8px"><span class="sc-month-net ${cls}">NT$ ${fmt(net)}</span><span style="font-size:11px;color:var(--txt3)">明細 →</span></span>
+        </div>
+        <div class="sc-month-body">
+          <div class="sc-r"><span>出貨 ${recsSell.length} 筆 ／ 進貨 ${recsBuy.length} 筆</span><span class="sc-v" style="color:var(--txt3)">共 ${totalRecs} 筆</span></div>
+          ${taxLine}
+          <div class="sc-r"><span style="font-weight:600;color:var(--txt)">確認淨利</span><span class="sc-v ${cls}" style="font-size:15px">NT$ ${fmt(net)}</span></div>
+        </div>
+      </div>`;
+    }
+    const hasPT=r=>r.profit_twd!==undefined&&r.profit_twd!==''&&r.profit_twd!==null;
+    const withoutProfit=recsSell.filter(r=>!hasPT(r));
+    // Determine actual vs estimated rate
+    const hasStoredRate=storedRates[ym]!==undefined;
+    const actualMonthRate=getActualRate(ym,recs,rate);
+    const mrate=hasStoredRate?storedRates[ym]:actualMonthRate;
+    const hasActualEx=recs.some(r=>r.type==='換匯'&&r.date?.startsWith(ym)&&r.rmb&&r.twd);
+    const rateLabel=hasStoredRate?'手動':'實際換匯均值';
+    const rateNote=hasActualEx&&!hasStoredRate?`<span style="font-size:10px;color:#34a853;margin-left:4px">（${rateLabel}）</span>`:`<span style="font-size:10px;color:#999;margin-left:4px">（估算）</span>`;
+    const rmb=sumF(withoutProfit,'total');
+    const calcRevTwd=withoutProfit.reduce((s,r)=>s+(r.twd?parseFloat(r.twd):(parseFloat(r.total)||0)*mrate),0);
+    const cost=sumF(recsBuy,'total');
+    return `<div class="sc-month">
+      <div class="sc-month-hd" onclick="gotoMonth('${ym}')" style="cursor:pointer">
+        <span class="sc-month-title">${label}</span>
+        <span style="display:flex;align-items:baseline;gap:8px"><span class="sc-month-net ${cls}">NT$ ${fmt(net)}</span><span style="font-size:11px;color:var(--txt3)">明細 →</span></span>
+      </div>
+      <div class="sc-month-body">
+        <div class="sc-r" style="padding:6px 0 10px">
+          <span style="color:var(--txt2)">匯率${rateNote}</span>
+          <input type="number" value="${mrate.toFixed(4)}" step="0.01" inputmode="decimal" style="width:80px;padding:6px 10px;font-size:14px;font-weight:600;border-radius:8px;text-align:right" onchange="setMonthRate('${ym}',this.value)" oninput="setMonthRate('${ym}',this.value)" onclick="event.stopPropagation()">
+        </div>
+        <div class="sc-r"><span>出貨收入</span><span class="sc-v blue">¥ ${fmt(rmb)} × ${mrate.toFixed(4)} = NT$ ${fmt(calcRevTwd)}</span></div>
+        <div class="sc-r"><span>進貨成本</span><span class="sc-v red">-NT$ ${fmt(cost)}</span></div>
+        ${taxLine}
+        <div class="sc-r"><span style="font-weight:600;color:var(--txt)">淨利</span><span class="sc-v ${cls}" style="font-size:15px">NT$ ${fmt(net)}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const lastSync=localStorage.getItem('ml_last_sync');
+  document.getElementById('sum-body').innerHTML=`
+  ${lastSync?`<div style="text-align:center;font-size:12px;color:var(--txt3);margin-bottom:10px">上次同步 ${lastSync}</div>`:''}
+  <div class="sc" style="margin-bottom:16px">
+    <div class="sc-t">累計淨利</div>
+    <div class="sc-r"><span style="font-weight:700;color:var(--txt)">總淨利</span><span class="sc-v ${totalNet>=0?'green':'red'}" style="font-size:18px">NT$ ${fmt(totalNet)}</span></div>
+  </div>
+  <div class="sc" style="margin-bottom:16px">
+    <div class="sc-t">區間淨利試算</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+      <input type="date" id="range-from" value="${rfCurrent}" style="${inputStyle}" onchange="rangeFrom=this.value;calcRange()">
+      <span style="color:var(--txt3);font-weight:700;flex-shrink:0">→</span>
+      <input type="date" id="range-to" value="${rtCurrent}" style="${inputStyle}" onchange="rangeTo=this.value;calcRange()">
+    </div>
+    <div id="range-result" style="text-align:center;padding:8px 0"><span style="color:var(--txt3)">選擇起訖日期</span></div>
+  </div>
+  ${(()=>{
+    const ar=getAR();
+    const entries=Object.entries(ar).sort((a,b)=>b[1].owed-a[1].owed);
+    const totalOwed=entries.reduce((s,[,v])=>s+(v.owed||0),0);
+    const rows=entries.map(([vendor,{owed}])=>{
+      const isOwed=(owed||0)>0;
+      const amtSpan=isOwed?`<span class="sc-v red">¥ ${fmt(owed)}</span>`:`<span class="sc-v green" style="font-size:12px">已結清</span>`;
+      return `<div class="sc-r"><span style="flex:1">${esc(vendor)}</span><div style="display:flex;align-items:center;gap:6px">${amtSpan}${isOwed?`<button onclick="markVendorReceived('${vendor.replace(/'/g,"\\'")}')" style="font-size:11px;padding:3px 9px;border-radius:7px;border:1.5px solid #e5e5ea;background:#fff;color:var(--txt2);cursor:pointer;white-space:nowrap">全結</button>`:''}<button onclick="editARAmount('${vendor.replace(/'/g,"\\'")}')" style="font-size:11px;padding:3px 8px;border-radius:7px;border:1.5px solid #e5e5ea;background:#fff;color:var(--txt3);cursor:pointer">✏</button></div></div>`;
+    }).join('');
+    return `<div class="sc" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="sc-t" style="margin-bottom:0">廠商應收帳款</div>
+        <button onclick="addAREntry()" style="font-size:12px;padding:4px 10px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;color:var(--txt2);cursor:pointer">＋ 新增廠商</button>
+      </div>
+      ${rows||'<div style="padding:10px 0;color:var(--txt3);font-size:13px;text-align:center">尚無廠商追蹤</div>'}
+      ${totalOwed>0?`<div class="sc-r" style="margin-top:6px;border-top:1px solid #f2f2f7;padding-top:10px"><span style="font-weight:700;color:var(--txt)">合計未收</span><span class="sc-v red" style="font-size:15px">¥ ${fmt(totalOwed)}</span></div>`:''}
+    </div>`;
+  })()}
+  ${monthCards}`;
+  if(rfCurrent||rtCurrent) setTimeout(calcRange,0);
+}
+
+// ─── AR (Accounts Receivable) ──────────────────────────────
+function markVendorReceived(vendor){
+  const ar=getAR();
+  if(!ar[vendor])return;
+  ar[vendor].owed=0;
+  saveAR(ar);
+  renderSummary();
+  populateExchangeVendors();
+  toast(`${vendor} 已標記全結清`);
+}
+function editARAmount(vendor){
+  const ar=getAR();
+  const cur=(ar[vendor]?.owed||0).toFixed(0);
+  const val=prompt(`${vendor} 應收金額（CNY）：`,cur);
+  if(val===null)return;
+  const num=parseFloat(val);
+  if(isNaN(num))return;
+  if(!ar[vendor])ar[vendor]={owed:0};
+  ar[vendor].owed=num;
+  saveAR(ar);
+  renderSummary();
+  populateExchangeVendors();
+}
+function addAREntry(){
+  const vendor=prompt('廠商名稱：');
+  if(!vendor||!vendor.trim())return;
+  const val=prompt(`${vendor.trim()} 目前欠款（CNY）：`,'0');
+  if(val===null)return;
+  const ar=getAR();
+  ar[vendor.trim()]={owed:parseFloat(val)||0};
+  saveAR(ar);
+  renderSummary();
+  populateExchangeVendors();
+}
+function populateExchangeVendors(){
+  const sel=document.getElementById('x-from');
+  if(!sel)return;
+  const ar=getAR();
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— 不選 —</option>';
+  Object.entries(ar)
+    .filter(([,v])=>(v.owed||0)>0)
+    .sort((a,b)=>b[1].owed-a[1].owed)
+    .forEach(([vendor,{owed}])=>{
+      const opt=document.createElement('option');
+      opt.value=vendor;
+      opt.textContent=`${vendor}（¥${fmt(owed)} 未收）`;
+      if(vendor===cur)opt.selected=true;
+      sel.appendChild(opt);
+    });
+  // Also add zero-balance vendors so user can pick them too
+  Object.entries(ar)
+    .filter(([,v])=>(v.owed||0)<=0)
+    .forEach(([vendor])=>{
+      const opt=document.createElement('option');
+      opt.value=vendor;
+      opt.textContent=vendor+'（已結清）';
+      sel.appendChild(opt);
+    });
+}
+
+// ─── Export CSV ────────────────────────────────────────────
+function exportCSV(){
+  const recs=getRecs();
+  const filter=document.getElementById('sec-rec').classList.contains('active')?curFilter:'全部';
+  const list=filter==='全部'?recs:recs.filter(r=>r.type===filter);
+  if(!list.length){toast('沒有資料');return;}
+  const hdr=['日期','類型','廠商/賣家/管道','航空','哩程(萬)','單價','總金額','幣別','帳戶','備註'];
+  const rows=list.map(r=>{
+    if(r.type==='出貨')return[r.date,'出貨',r.vendor,r.airline,r.miles,r.unitprice+'RMB/萬',r.total,'RMB','',r.note];
+    if(r.type==='進貨')return[r.date,'進貨',r.seller,r.airline,r.miles,r.unitprice+'TWD/哩',r.total,'TWD',r.payment,r.note];
+    if(r.type==='換匯')return[r.date,'換匯',r.channel,'','','',r.rmb+'→'+r.twd,'CNY→TWD',r.account,r.note];
+    if(r.type==='稅金')return[r.date,'稅金',r.vendor,'','','',r.twd+'TWD/'+r.rmb+'RMB','',r.card,r.note];
+    if(r.type==='其他')return[r.date,'其他','','','','',r.amount,'TWD',r.account,r.desc];
+    return[];
+  });
+  const csv=[hdr,...rows].map(row=>row.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`里程記帳_${today()}.csv`; a.click();
+}
+
+function fmt(n){return Math.round(n).toLocaleString('zh-TW');}
+
+let _tt;
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),2000);}
+
+// ─── Navigation ────────────────────────────────────────────
+document.querySelectorAll('.ni').forEach(item=>{
+  item.addEventListener('click',()=>{
+    const sec=item.dataset.sec;
+    document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+    document.getElementById('sec-'+sec).classList.add('active');
+    if(sec==='acc')renderAccounts();
+    if(sec==='rec')renderRecords();
+    if(sec==='sum')renderSummary();
+  });
+});
+document.querySelectorAll('#atabs .tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    const f=tab.dataset.f;
+    document.querySelectorAll('#atabs .tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    ['出貨','進貨','換匯','稅金','其他'].forEach(x=>document.getElementById('form-'+x).style.display=x===f?'block':'none');
+    if(f==='換匯')populateExchangeVendors();
+  });
+});
+document.querySelectorAll('#ftabs .tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    curFilter=tab.dataset.f2;
+    document.querySelectorAll('#ftabs .tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    renderRecords();
+  });
+});
+
+// ─── JSON Import / Export ──────────────────────────────────
+function exportJSON(){
+  const data={records:getRecs(),accounts:getAccounts(),exported:today()};
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+  a.download='里程記帳_'+today()+'.json';a.click();
+}
+function openImport(){
+  document.getElementById('import-text').value='';
+  document.getElementById('import-file').value='';
+  document.getElementById('modal-import').classList.add('open');
+}
+function closeImport(){document.getElementById('modal-import').classList.remove('open');}
+function readFile(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{document.getElementById('import-text').value=e.target.result;};
+  reader.readAsText(file);
+}
+function doImport(){
+  const txt=document.getElementById('import-text').value.trim();
+  if(!txt){toast('請貼上 JSON 資料');return;}
+  let data;
+  try{data=JSON.parse(txt);}catch(e){toast('格式錯誤，請確認 JSON');return;}
+  const newRecs=Array.isArray(data)?data:(data.records||[]);
+  if(!newRecs.length){toast('沒有找到紀錄');return;}
+  const existing=getRecs();
+  const existingIds=new Set(existing.map(r=>r.id));
+  const toAdd=newRecs.filter(r=>r.id&&!existingIds.has(r.id));
+  const toUpdate=newRecs.filter(r=>r.id&&existingIds.has(r.id));
+  const updatedExisting=existing.map(r=>{const u=toUpdate.find(x=>x.id===r.id);return u||r;});
+  const merged=[...toAdd,...updatedExisting].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.id-a.id));
+  saveRecs(merged);
+  if(data.accounts){
+    const existAcc=getAccounts();
+    const existAccIds=new Set(existAcc.map(a=>a.id));
+    const newAccs=(data.accounts||[]).filter(a=>a.id&&!existAccIds.has(a.id));
+    if(newAccs.length)saveAccounts([...existAcc,...newAccs]);
+  }
+  closeImport();
+  renderSummary();
+  const msg=toAdd.length&&toUpdate.length?`✓ 新增 ${toAdd.length} 筆，更新 ${toUpdate.length} 筆`:toAdd.length?`✓ 已匯入 ${toAdd.length} 筆`:`✓ 已更新 ${toUpdate.length} 筆`;
+  toast(msg);
+}
+document.getElementById('modal-import').addEventListener('click',function(e){if(e.target===this)closeImport();});
+document.getElementById('modal-deal').addEventListener('click',function(e){if(e.target===this)closeRecordDetail();});
+
+// ─── Seed rates ────────────────────────────────────────────
+(function(){
+  const r=getRates();
+  if(!r['2026-04']){r['2026-04']=4.72;saveRates(r);}
+})();
+
+// ─── Confirmed monthly profits ─────────────────────────────
+(function(){
+  const confirmed={
+    '2025-01':578205,'2025-02':685142,'2025-03':465439,
+    '2025-04':485990,'2025-05':542494,
+    '2025-06':337255,'2025-07':422118,'2025-08':378192,
+    '2025-09':282673,'2025-10':222086,'2025-11':190222,'2025-12':203854,
+    '2026-01':303227,'2026-02':332293,'2026-03':480083
+    // 2026-04, 2026-05: calculated from records
+  };
+  const p=getProfits();
+  delete p['2026-04']; delete p['2026-05'];
+  saveProfits({...p,...confirmed});
+})();
+
+// ─── Seed data (auto-import if localStorage is empty) ──────
+(function(){
+  if(getRecs().length>0)return;
+  const seed={"records":[{"id":1000000001,"type":"出貨","date":"2026-04-01","vendor":"小平個人","airline":"長榮 EVA","miles":"8","unitprice":"1020","total":"8160","note":"JIA/LI 3354473124"},{"id":1000000002,"type":"出貨","date":"2026-04-01","vendor":"小平個人","airline":"長榮 EVA","miles":"8","unitprice":"1020","total":"8160","note":"MA/MINGYUAN 3354473323"},{"id":1000000003,"type":"出貨","date":"2026-04-10","vendor":"小平個人","airline":"華航 CI","miles":"6","unitprice":"1050","total":"6300","note":"WUETHAN 104759875"},{"id":1000000004,"type":"出貨","date":"2026-04-11","vendor":"小平個人","airline":"長榮 EVA","miles":"7.5","unitprice":"1020","total":"7650","note":"XU TIANHUI 1314537195"},{"id":1000000005,"type":"出貨","date":"2026-04-22","vendor":"小平個人","airline":"亞萬","miles":"18.5","unitprice":"1010","total":"18685","note":"18.5W合併"},{"id":1000000006,"type":"出貨","date":"2026-04-29","vendor":"小平個人","airline":"長榮 EVA","miles":"15","unitprice":"1010","total":"15150","note":"CHUNG VICKYWINGYAN 1314627355"},{"id":1000000007,"type":"出貨","date":"2026-04-29","vendor":"小平個人","airline":"長榮 EVA","miles":"15","unitprice":"1010","total":"15150","note":"LIANGHONGZHI 3354961304"},{"id":1000000008,"type":"出貨","date":"2026-04-29","vendor":"小平個人","airline":"長榮 EVA","miles":"15","unitprice":"1010","total":"15150","note":"LIANG/LYDIA 1314627392"},{"id":1000000009,"type":"出貨","date":"2026-04-30","vendor":"小平個人","airline":"小樹點","miles":"4.7","unitprice":"1010","total":"4747","note":"小數點"},{"id":1000000010,"type":"出貨","date":"2026-05-02","vendor":"小平個人","airline":"長榮 EVA","miles":"7.5","unitprice":"1020","total":"7650","note":"WEI/YUHONG 3355004074"},{"id":1000000011,"type":"出貨","date":"2026-05-02","vendor":"小平個人","airline":"長榮 EVA","miles":"7.5","unitprice":"1020","total":"7650","note":"YANG/HAOSEN 3355004085"},{"id":1000000012,"type":"出貨","date":"2026-04-14","vendor":"小平群組","airline":"長榮 EVA","miles":"8","unitprice":"1020","total":"8160","note":"WANG WENTAO 1314552912"},{"id":1000000013,"type":"出貨","date":"2026-05-06","vendor":"小平群組","airline":"長榮 EVA","miles":"7.5","unitprice":"1020","total":"7650","note":"LIAO YAN 3355047651"},{"id":1000000014,"type":"出貨","date":"2026-05-07","vendor":"小平群組","airline":"華航 CI","miles":"8","unitprice":"1050","total":"8400","note":"CONG/WEI 105582148"},{"id":1000000015,"type":"進貨","date":"2026-04-01","seller":"Emerson","airline":"長榮 EVA","miles":"8","unitprice":"0.41","total":"33800","payment":"","note":"JIA/LI 含佑佑1000"},{"id":1000000016,"type":"進貨","date":"2026-04-01","seller":"Emerson","airline":"長榮 EVA","miles":"8","unitprice":"0.41","total":"33800","payment":"","note":"MA/MINGYUAN 含佑佑1000"},{"id":1000000017,"type":"進貨","date":"2026-04-10","seller":"洪譯宸","airline":"華航 CI","miles":"6","unitprice":"0.38","total":"22800","payment":"","note":"WUETHAN 小平個人"},{"id":1000000018,"type":"進貨","date":"2026-04-11","seller":"Viitton Lin","airline":"長榮 EVA","miles":"7.5","unitprice":"0.42","total":"31500","payment":"","note":"XU TIANHUI 小平個人"},{"id":1000000019,"type":"進貨","date":"2026-04-22","seller":"多賣家","airline":"亞萬","miles":"18.5","unitprice":"0.403","total":"74480","payment":"","note":"林陳鴻0.41/鍾貞祥0.41/其餘0.40 小平個人"},{"id":1000000020,"type":"進貨","date":"2026-04-29","seller":"曾怎","airline":"長榮 EVA","miles":"15","unitprice":"0.42","total":"63000","payment":"","note":"CHUNG VICKYWINGYAN 小平個人"},{"id":1000000021,"type":"進貨","date":"2026-04-29","seller":"慶洲","airline":"長榮 EVA","miles":"15","unitprice":"0.40","total":"60000","payment":"","note":"LIANGHONGZHI 小平個人"},{"id":1000000022,"type":"進貨","date":"2026-04-29","seller":"慶洲","airline":"長榮 EVA","miles":"15","unitprice":"0.40","total":"60000","payment":"","note":"LIANG/LYDIA 小平個人"},{"id":1000000023,"type":"進貨","date":"2026-04-30","seller":"不詳","airline":"小樹點","miles":"4.7","unitprice":"0.42","total":"19740","payment":"","note":"小數點 小平個人"},{"id":1000000024,"type":"進貨","date":"2026-05-02","seller":"余謹呈","airline":"長榮 EVA","miles":"7.5","unitprice":"0.42","total":"31500","payment":"","note":"WEI/YUHONG 小平個人"},{"id":1000000025,"type":"進貨","date":"2026-05-02","seller":"Joba","airline":"長榮 EVA","miles":"7.5","unitprice":"0.41","total":"30750","payment":"","note":"YANG/HAOSEN 小平個人"},{"id":1000000026,"type":"進貨","date":"2026-04-14","seller":"Kevin Chen","airline":"長榮 EVA","miles":"8","unitprice":"0.42","total":"33600","payment":"","note":"WANG WENTAO 小平群組"},{"id":1000000027,"type":"進貨","date":"2026-05-06","seller":"Cheng Yu Hsieh","airline":"長榮 EVA","miles":"7.5","unitprice":"0.41","total":"30750","payment":"","note":"LIAO YAN 小平群組"},{"id":1000000028,"type":"進貨","date":"2026-05-07","seller":"Victoria","airline":"華航 CI","miles":"8","unitprice":"0.39","total":"31200","payment":"","note":"CONG/WEI 小平群組"},{"id":1000000029,"type":"出貨","date":"2026-04-03","vendor":"山西","airline":"長榮 EVA","miles":"9.25","unitprice":"1150","total":"10637.5","note":"Yu Xinyi 3354502841 秒轉"},{"id":1000000030,"type":"出貨","date":"2026-04-03","vendor":"山西","airline":"長榮 EVA","miles":"9.25","unitprice":"1140","total":"10545","note":"Yu Xiuhua 3354502900 秒轉"},{"id":1000000031,"type":"出貨","date":"2026-04-30","vendor":"山西","airline":"國泰 CX","miles":"5.6","unitprice":"980","total":"5488","note":"CX"},{"id":1000000032,"type":"出貨","date":"2026-05-13","vendor":"山西","airline":"長榮 EVA","miles":"9.25","unitprice":"1140","total":"10545","note":"Zhang Min 3355207796"},{"id":1000000033,"type":"進貨","date":"2026-04-03","seller":"Jerry Wu","airline":"長榮 EVA","miles":"9.25","unitprice":"0.45","total":"41625","payment":"兆豐","note":"Yu Xinyi 山西"},{"id":1000000034,"type":"進貨","date":"2026-04-03","seller":"Ming-Yen Lai","airline":"長榮 EVA","miles":"9.25","unitprice":"0.46","total":"42550","payment":"兆豐","note":"Yu Xiuhua 山西"},{"id":1000000035,"type":"進貨","date":"2026-04-30","seller":"猴子","airline":"國泰 CX","miles":"5.6","unitprice":"0.35","total":"19600","payment":"","note":"山西 CX"},{"id":1000000036,"type":"進貨","date":"2026-05-13","seller":"Irene Li","airline":"長榮 EVA","miles":"9.25","unitprice":"0.46","total":"42550","payment":"","note":"Zhang Min 山西"},{"id":1000000037,"type":"出貨","date":"2026-04-07","vendor":"唐磊","airline":"長榮 EVA","miles":"8","unitprice":"1200","total":"9800","note":"DENG/FEIZHOU 3353281772 秒轉 含+200"},{"id":1000000038,"type":"出貨","date":"2026-04-10","vendor":"唐磊","airline":"日航 JL","miles":"10","unitprice":"1280","total":"12800","note":"日航"},{"id":1000000039,"type":"出貨","date":"2026-04-12","vendor":"唐磊","airline":"長榮 EVA","miles":"16","unitprice":"1020","total":"16320","note":"CHAN/HENRY 1314538886"},{"id":1000000040,"type":"出貨","date":"2026-04-12","vendor":"唐磊","airline":"長榮 EVA","miles":"16","unitprice":"1020","total":"16320","note":"LIANG/JAMIE 1314538901"},{"id":1000000041,"type":"出貨","date":"2026-04-12","vendor":"唐磊","airline":"長榮 EVA","miles":"16","unitprice":"1020","total":"16320","note":"CHAN/JUSTIN JAY 1314538934"},{"id":1000000042,"type":"出貨","date":"2026-04-12","vendor":"唐磊","airline":"長榮 EVA","miles":"8","unitprice":"1020","total":"7960","note":"CHAN/CALEB JAMES 1314538956 -200遲到"},{"id":1000000043,"type":"出貨","date":"2026-04-19","vendor":"唐磊","airline":"長榮 EVA","miles":"15.5","unitprice":"1020","total":"15810","note":"TANG/JUN 1313379034"},{"id":1000000044,"type":"出貨","date":"2026-04-23","vendor":"唐磊","airline":"長榮 EVA","miles":"16","unitprice":"1020","total":"16320","note":"CAI DELINDANNY 1314600114"},{"id":1000000045,"type":"出貨","date":"2026-04-23","vendor":"唐磊","airline":"長榮 EVA","miles":"16","unitprice":"1020","total":"16320","note":"TANG XINJIAN 1314600221"},{"id":1000000046,"type":"出貨","date":"2026-04-23","vendor":"唐磊","airline":"長榮 EVA","miles":"16","unitprice":"1020","total":"16320","note":"TANG XINSUI 3354883033"},{"id":1000000047,"type":"出貨","date":"2026-04-23","vendor":"唐磊","airline":"長榮 EVA","miles":"16","unitprice":"1020","total":"16320","note":"TANG ZHONGFANG 3354883210"},{"id":1000000048,"type":"出貨","date":"2026-04-27","vendor":"唐磊","airline":"華航 CI","miles":"8","unitprice":"1050","total":"8400","note":"HU HSINFANG 105269782"},{"id":1000000049,"type":"進貨","date":"2026-04-07","seller":"INK T.S","airline":"長榮 EVA","miles":"8","unitprice":"0.46","total":"36800","payment":"","note":"DENG/FEIZHOU 唐磊"},{"id":1000000050,"type":"進貨","date":"2026-04-10","seller":"蘇沛","airline":"日航 JL","miles":"10","unitprice":"0.672","total":"67200","payment":"","note":"唐磊 日航"},{"id":1000000051,"type":"進貨","date":"2026-04-12","seller":"鍾麒宇","airline":"長榮 EVA","miles":"16","unitprice":"0.42","total":"67200","payment":"","note":"CHAN/HENRY 唐磊"},{"id":1000000052,"type":"進貨","date":"2026-04-12","seller":"鍾麒宇","airline":"長榮 EVA","miles":"16","unitprice":"0.42","total":"67200","payment":"","note":"LIANG/JAMIE 唐磊"},{"id":1000000053,"type":"進貨","date":"2026-04-12","seller":"PTT小陳","airline":"長榮 EVA","miles":"16","unitprice":"0.425","total":"68000","payment":"","note":"CHAN/JUSTIN JAY 唐磊"},{"id":1000000054,"type":"進貨","date":"2026-04-12","seller":"Vita","airline":"長榮 EVA","miles":"8","unitprice":"0.42","total":"33600","payment":"","note":"CHAN/CALEB JAMES 唐磊"},{"id":1000000055,"type":"進貨","date":"2026-04-19","seller":"陳盈良","airline":"長榮 EVA","miles":"15.5","unitprice":"0.41","total":"63550","payment":"","note":"TANG/JUN 唐磊"},{"id":1000000056,"type":"進貨","date":"2026-04-23","seller":"Edward","airline":"長榮 EVA","miles":"16","unitprice":"0.41","total":"65600","payment":"","note":"CAI DELINDANNY 唐磊"},{"id":1000000057,"type":"進貨","date":"2026-04-23","seller":"Edward","airline":"長榮 EVA","miles":"16","unitprice":"0.41","total":"65600","payment":"","note":"TANG XINJIAN 唐磊"},{"id":1000000058,"type":"進貨","date":"2026-04-23","seller":"陳盈良","airline":"長榮 EVA","miles":"16","unitprice":"0.41","total":"65600","payment":"","note":"TANG XINSUI 唐磊"},{"id":1000000059,"type":"進貨","date":"2026-04-23","seller":"陳盈良","airline":"長榮 EVA","miles":"16","unitprice":"0.41","total":"65600","payment":"","note":"TANG ZHONGFANG 唐磊"},{"id":1000000060,"type":"進貨","date":"2026-04-27","seller":"","airline":"華航 CI","miles":"8","unitprice":"0.39","total":"31200","payment":"","note":"HU HSINFANG 唐磊"},{"id":1000000061,"type":"出貨","date":"2026-05-07","vendor":"唐磊","airline":"華航 CI","miles":"24","unitprice":"1000","total":"24000","note":"NH 3×8W"},{"id":1000000062,"type":"出貨","date":"2026-05-08","vendor":"唐磊","airline":"華航 CI","miles":"16","unitprice":"1050","total":"16800","note":"梁之曼"},{"id":1000000063,"type":"出貨","date":"2026-05-09","vendor":"唐磊","airline":"華航 CI","miles":"32","unitprice":"1350","total":"43204","note":"NH 4連體 含附加費"},{"id":1000000064,"type":"出貨","date":"2026-05-09","vendor":"唐磊","airline":"華航 CI","miles":"8","unitprice":"1050","total":"8400","note":"ZHOU/CHUYANG→ZHONGQIANG"},{"id":1000000065,"type":"出貨","date":"2026-05-09","vendor":"唐磊","airline":"華航 CI","miles":"24","unitprice":"1050","total":"25200","note":"HE/WENYI LI/JINGMIN LI/XIAOPING"},{"id":1000000066,"type":"出貨","date":"2026-05-09","vendor":"唐磊","airline":"華航 CI","miles":"8","unitprice":"1050","total":"8400","note":"XU/YIKANG"},{"id":1000000067,"type":"出貨","date":"2026-05-11","vendor":"唐磊","airline":"華航 CI","miles":"8","unitprice":"1050","total":"8400","note":"LIANG/FUZHEN"},{"id":1000000068,"type":"出貨","date":"2026-05-12","vendor":"唐磊","airline":"華航 CI","miles":"8","unitprice":"1050","total":"8400","note":"SU/RUIXUAN"},{"id":1000000069,"type":"出貨","date":"2026-05-13","vendor":"唐磊","airline":"長榮 EVA","miles":"8","unitprice":"1020","total":"8160","note":"CHENG/HUIWEN 3355208404"},{"id":1000000070,"type":"出貨","date":"2026-05-21","vendor":"唐磊","airline":"長榮 EVA","miles":"8","unitprice":"1020","total":"8160","note":"FU/GANG 3353590225 漢堡"},{"id":1000000071,"type":"進貨","date":"2026-05-09","seller":"","airline":"華航 CI","miles":"118","unitprice":"0.39","total":"460200","payment":"","note":"唐磊 5月 華航批次 118W@0.39"},{"id":1000000072,"type":"進貨","date":"2026-05-09","seller":"","airline":"華航 CI","miles":"10","unitprice":"0.40","total":"40000","payment":"","note":"唐磊 5月 華航批次 10W@0.40"},{"id":1000000073,"type":"進貨","date":"2026-05-13","seller":"Lily","airline":"長榮 EVA","miles":"8","unitprice":"0.41","total":"32800","payment":"","note":"CHENG/HUIWEN 唐磊"},{"id":1000000074,"type":"進貨","date":"2026-05-21","seller":"Emerson","airline":"長榮 EVA","miles":"8","unitprice":"0.41","total":"32800","payment":"","note":"FU/GANG 唐磊 漢堡"},{"id":1000000075,"type":"出貨","date":"2026-04-01","vendor":"袁","airline":"國泰 CX","miles":"7.6","unitprice":"1000","total":"7600","note":"CX 7.6W"},{"id":1000000076,"type":"出貨","date":"2026-04-01","vendor":"袁","airline":"國泰 CX","miles":"4.1","unitprice":"1000","total":"4100","note":"CX 4.1W"},{"id":1000000077,"type":"出貨","date":"2026-05-09","vendor":"袁","airline":"華航 CI","miles":"8","unitprice":"1050","total":"8400","note":"XIE/ZHUOXI 105637511"},{"id":1000000078,"type":"進貨","date":"2026-04-01","seller":"","airline":"國泰 CX","miles":"7.6","unitprice":"0.35","total":"26600","payment":"","note":"袁 7.6W CX"},{"id":1000000079,"type":"進貨","date":"2026-04-01","seller":"","airline":"國泰 CX","miles":"3.8","unitprice":"0.41","total":"15580","payment":"","note":"袁 實付3.8W @0.41 對應4.1W出貨"},{"id":1000000080,"type":"進貨","date":"2026-05-09","seller":"","airline":"華航 CI","miles":"8","unitprice":"0.39","total":"31200","payment":"","note":"XIE/ZHUOXI 袁"}]};
+  saveRecs(seed.records.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.id-a.id)));
+})();
+
+// ─── Init ──────────────────────────────────────────────────
+setDates();
+setupCalc();
+setupAC('s-vendor','s-vendor-ac','vendor');
+setupAC('b-seller','b-seller-ac','seller');
+setupAC('b-pay','b-pay-ac','payment');
+setupAC('x-ch','x-ch-ac','channel');
+setupAC('x-acc','x-acc-ac','payment');
+setupAC('t-vendor','t-vendor-ac','vendor');
+setupAC('t-card','t-card-ac','card');
+setupAC('o-acc','o-acc-ac','payment');
+</script>
+</body>
+</html>
