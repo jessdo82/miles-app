@@ -19,7 +19,11 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'PingFang TC',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
 
 .hd{background:rgba(255,255,255,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:16px 20px 0;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.05)}
-.hd h1{font-size:22px;font-weight:800;padding-bottom:10px;letter-spacing:-.4px}
+.hd h1{font-size:28px;font-weight:900;padding-bottom:10px;letter-spacing:-.6px;line-height:1}
+.grad-blue{background:linear-gradient(120deg,#007aff,#4fa3ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.grad-green{background:linear-gradient(120deg,#1c9e42,#34c759);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.grad-orange{background:linear-gradient(120deg,#c96500,#ff9500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.grad-purple{background:linear-gradient(120deg,#8433c4,#af52de);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .tabs{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:4px;padding-bottom:10px}
 .tabs::-webkit-scrollbar{display:none}
 .tab{flex-shrink:0;padding:7px 15px;font-size:13px;font-weight:600;color:var(--txt2);border-radius:22px;cursor:pointer;white-space:nowrap;transition:all .18s;border:1.5px solid transparent}
@@ -157,7 +161,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
 <!-- ========== ADD ========== -->
 <div class="sec active" id="sec-add">
   <div class="hd">
-    <h1>新增紀錄</h1>
+    <h1 class="grad-blue">新增紀錄</h1>
     <div class="tabs" id="atabs">
       <div class="tab active" data-f="出貨">出貨</div>
       <div class="tab" data-f="進貨">進貨</div>
@@ -261,7 +265,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
 
 <!-- ========== ACCOUNTS ========== -->
 <div class="sec" id="sec-acc">
-  <div class="hd"><h1>帳戶</h1></div>
+  <div class="hd"><h1 class="grad-green">帳戶</h1></div>
   <div class="ct" id="acc-list"></div>
 </div>
 
@@ -269,7 +273,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
 <div class="sec" id="sec-rec">
   <div class="hd">
     <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:2px">
-      <h1 style="margin:0">交易紀錄</h1>
+      <h1 style="margin:0" class="grad-orange">交易紀錄</h1>
       <button onclick="showLog()" style="font-size:12px;padding:5px 12px;border-radius:9px;border:1.5px solid #e5e5ea;background:#fff;color:var(--txt2);cursor:pointer;font-weight:500">操作日誌</button>
     </div>
     <div style="padding:10px 0 4px">
@@ -294,7 +298,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
 
 <!-- ========== SUMMARY ========== -->
 <div class="sec" id="sec-sum">
-  <div class="hd"><h1>概覽</h1></div>
+  <div class="hd"><h1 class="grad-purple">概覽</h1></div>
   <div class="ct">
     <button id="sync-btn" class="btn" style="margin-bottom:10px;border-radius:12px" onclick="syncCloud()">↻ 雲端同步</button>
     <div style="display:flex;gap:8px;margin-bottom:12px">
