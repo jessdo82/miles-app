@@ -233,7 +233,10 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
 <!-- ========== RECORDS ========== -->
 <div class="sec" id="sec-rec">
   <div class="hd">
-    <h1>交易紀錄</h1>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:2px">
+      <h1 style="margin:0">交易紀錄</h1>
+      <button onclick="showLog()" style="font-size:12px;padding:5px 12px;border-radius:9px;border:1.5px solid #e5e5ea;background:#fff;color:var(--txt2);cursor:pointer;font-weight:500">操作日誌</button>
+    </div>
     <div style="padding:10px 0 4px">
       <input type="search" id="rec-search" placeholder="搜尋卡號、乘客、賣家、廠商…" style="border-radius:10px;padding:9px 14px;font-size:15px;background:#f2f2f7;border:none" oninput="renderRecords()">
     </div>
@@ -715,7 +718,7 @@ function renderAccounts(){
     html+='</div>';
   });
   html+=`<button class="btn btn-ghost" style="margin-top:4px" onclick="openAccModal()">＋ 新增帳戶</button>`;
-  html+=`<div style="height:10px"></div><div style="display:flex;gap:8px"><button class="btn-export" style="flex:1" onclick="exportCSV()">匯出 CSV</button><button class="btn-export" style="flex:1;background:#f2f2f7;color:var(--txt)" onclick="showLog()">操作日誌</button></div>`;
+  html+=`<div style="height:10px"></div><button class="btn-export" onclick="exportCSV()">匯出 CSV</button>`;
   el.innerHTML=html;
 }
 
@@ -1174,7 +1177,7 @@ function renderSummary(){
   ${lastSync?`<div style="text-align:center;font-size:12px;color:var(--txt3);margin-bottom:10px">上次同步 ${lastSync}</div>`:''}
   <div class="sc" style="margin-bottom:16px">
     <div class="sc-t">累計淨利</div>
-    <div class="sc-r"><span style="font-weight:700;color:var(--txt)">總淨利</span><span class="sc-v ${totalNet>=0?'green':'red'}" style="font-size:18px">NT$ ${fmt(totalNet)}</span></div>
+    <div class="sc-r"><span style="font-weight:700;color:var(--txt)">總淨利</span><div style="display:flex;align-items:center;gap:10px"><span class="sc-v ${totalNet>=0?'green':'red'}" style="font-size:18px">${localStorage.getItem('ml_hide_profit')==='1'?'••••••••':`NT$ ${fmt(totalNet)}`}</span><button onclick="localStorage.setItem('ml_hide_profit',localStorage.getItem('ml_hide_profit')==='1'?'0':'1');renderSummary()" style="font-size:16px;border:none;background:none;cursor:pointer;color:var(--txt3);padding:0;line-height:1">${localStorage.getItem('ml_hide_profit')==='1'?'🙈':'👁'}</button></div></div>
   </div>
   <div class="sc" style="margin-bottom:16px">
     <div class="sc-t">區間淨利試算</div>
@@ -1187,20 +1190,28 @@ function renderSummary(){
   </div>
   ${(()=>{
     const ar=getAR();
-    const entries=Object.entries(ar).sort((a,b)=>b[1].owed-a[1].owed);
-    const totalOwed=entries.reduce((s,[,v])=>s+(v.owed||0),0);
-    const rows=entries.map(([vendor,{owed}])=>{
+    const btnStyle='font-size:11px;padding:3px 8px;border-radius:7px;border:1.5px solid #e5e5ea;background:#fff;cursor:pointer;white-space:nowrap';
+    const mkRow=(vendor,owed)=>{
       const isOwed=(owed||0)>0;
+      const v2=vendor.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       const amtSpan=isOwed?`<span class="sc-v red">¥ ${fmt(owed)}</span>`:`<span class="sc-v green" style="font-size:12px">已結清</span>`;
-      return `<div class="sc-r"><span style="flex:1">${esc(vendor)}</span><div style="display:flex;align-items:center;gap:6px">${amtSpan}${isOwed?`<button onclick="markVendorReceived('${vendor.replace(/'/g,"\\'")}')" style="font-size:11px;padding:3px 9px;border-radius:7px;border:1.5px solid #e5e5ea;background:#fff;color:var(--txt2);cursor:pointer;white-space:nowrap">全結</button>`:''}<button onclick="editARAmount('${vendor.replace(/'/g,"\\'")}')" style="font-size:11px;padding:3px 8px;border-radius:7px;border:1.5px solid #e5e5ea;background:#fff;color:var(--txt3);cursor:pointer">✏</button></div></div>`;
-    }).join('');
+      const settleBtn=isOwed?`<button onclick="markVendorReceived('${v2}')" style="${btnStyle};color:var(--txt2)">全結</button>`:'';
+      return `<div class="sc-r"><span style="flex:1">${esc(vendor)}</span><div style="display:flex;align-items:center;gap:5px">${amtSpan}${settleBtn}<button onclick="editARAmount('${v2}')" style="${btnStyle};color:var(--txt3)">✏</button><button onclick="deleteAREntry('${v2}')" style="${btnStyle};color:#ff3b30;border-color:#ffd0ce">✕</button></div></div>`;
+    };
+    const owedEntries=Object.entries(ar).filter(([,v])=>(v.owed||0)>0).sort((a,b)=>b[1].owed-a[1].owed);
+    const settledEntries=Object.entries(ar).filter(([,v])=>(v.owed||0)<=0);
+    const totalOwed=owedEntries.reduce((s,[,v])=>s+(v.owed||0),0);
+    const owedRows=owedEntries.map(([v,{owed}])=>mkRow(v,owed)).join('');
+    const settledRows=settledEntries.map(([v,{owed}])=>mkRow(v,owed)).join('');
+    const settledToggle=settledEntries.length?`<div style="margin-top:8px"><button onclick="const el=document.getElementById('ar-settled');el.style.display=el.style.display==='none'?'block':'none';this.textContent=el.style.display==='none'?'已結清（${settledEntries.length}）▼':'已結清（${settledEntries.length}）▲'" style="${btnStyle};color:var(--txt3);width:100%">已結清（${settledEntries.length}）▼</button><div id="ar-settled" style="display:none;margin-top:4px">${settledRows}</div></div>`:'';
     return `<div class="sc" style="margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div class="sc-t" style="margin-bottom:0">廠商應收帳款</div>
-        <button onclick="addAREntry()" style="font-size:12px;padding:4px 10px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;color:var(--txt2);cursor:pointer">＋ 新增廠商</button>
+        <button onclick="addAREntry()" style="${btnStyle};color:var(--txt2)">＋ 新增廠商</button>
       </div>
-      ${rows||'<div style="padding:10px 0;color:var(--txt3);font-size:13px;text-align:center">尚無廠商追蹤</div>'}
+      ${owedRows||'<div style="padding:8px 0;color:var(--txt3);font-size:13px;text-align:center">目前無未結清款項</div>'}
       ${totalOwed>0?`<div class="sc-r" style="margin-top:6px;border-top:1px solid #f2f2f7;padding-top:10px"><span style="font-weight:700;color:var(--txt)">合計未收</span><span class="sc-v red" style="font-size:15px">¥ ${fmt(totalOwed)}</span></div>`:''}
+      ${settledToggle}
     </div>`;
   })()}
   ${monthCards}`;
@@ -1209,6 +1220,14 @@ function renderSummary(){
 
 // ─── AR (Accounts Receivable) ──────────────────────────────
 function markVendorReceived(vendor){openARSettle(vendor);}
+function deleteAREntry(vendor){
+  if(!confirm(`確認刪除「${vendor}」的應收帳款記錄？`))return;
+  const ar=getAR();
+  delete ar[vendor];
+  saveAR(ar);
+  logActivity('刪除AR廠商',vendor);
+  renderSummary();populateExchangeVendors();
+}
 function editARAmount(vendor){
   const ar=getAR();
   const cur=(ar[vendor]?.owed||0).toFixed(0);
