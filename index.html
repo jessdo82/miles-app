@@ -396,6 +396,34 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
   </div>
 </div>
 
+<!-- Inventory Detail Modal -->
+<div class="modal-bg" id="modal-inv-detail">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="inv-detail-title">庫存明細</div>
+    <div id="inv-detail-body" style="max-height:55vh;overflow-y:auto"></div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:12px;width:100%" onclick="closeInvDetail()">關閉</button>
+  </div>
+</div>
+
+<!-- Inventory Sell Modal -->
+<div class="modal-bg" id="modal-inv-sell">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="inv-sell-title">售出庫存哩程</div>
+    <div id="inv-sell-src" style="font-size:12px;color:var(--txt2);background:#f2f2f7;border-radius:10px;padding:10px 12px;margin-bottom:14px;line-height:1.6"></div>
+    <div class="fg"><label>售出萬哩數</label><input type="number" id="inv-sell-miles" inputmode="decimal" step="0.1" placeholder="0.0"></div>
+    <div class="fg"><label>廠商 / 買家</label><div class="acw"><input type="text" id="inv-sell-vendor" placeholder="廠商名稱" autocomplete="off"><div class="acl" id="inv-sell-vendor-ac"></div></div></div>
+    <div class="fg"><label>每萬哩單價（RMB）</label><input type="number" id="inv-sell-up" inputmode="decimal" step="0.01" placeholder="1020"></div>
+    <div class="fg"><label>日期</label><input type="date" id="inv-sell-date"></div>
+    <div class="fg"><label>備註</label><input type="text" id="inv-sell-note" placeholder="選填"></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeInvSell()">取消</button>
+      <button class="btn btn-sm" style="flex:1" onclick="submitInvSell()">建立出貨記錄</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -764,9 +792,10 @@ function renderAccounts(){
   if(invTotalMiles>0){
     html+=`<div class="acc-section"><div class="acc-section-title">📦 哩程庫存 &nbsp;${invTotalMiles}萬哩 · NT$ ${fmt(invTotalCost)}</div>`;
     Object.entries(invByAirline).forEach(([airline,d])=>{
-      html+=`<div class="acc-row" style="cursor:default">
-        <div><div class="acc-name">${esc(airline)}</div><div style="font-size:12px;color:var(--txt2);margin-top:2px">${d.miles}萬哩 · ${d.count}筆進貨</div></div>
-        <span class="acc-bal pos">NT$ ${fmt(d.cost)}</span>
+      const al=airline.replace(/'/g,"\\'");
+      html+=`<div class="acc-row" onclick="openInventoryDetail('${al}')">
+        <div><div class="acc-name">${esc(airline)}</div><div style="font-size:12px;color:var(--txt2);margin-top:2px">${d.miles}萬哩 · ${d.count}批進貨 · 點擊明細</div></div>
+        <div style="text-align:right"><span class="acc-bal pos">NT$ ${fmt(d.cost)}</span><div style="font-size:11px;color:var(--txt3);margin-top:2px">→ 明細 / 出售</div></div>
       </div>`;
     });
     html+='</div>';
@@ -1169,6 +1198,101 @@ function showRecordDetail(id){
   document.getElementById('modal-deal').classList.add('open');
 }
 function closeRecordDetail(){document.getElementById('modal-deal').classList.remove('open');}
+
+// ─── Inventory detail & sell ───────────────────────────────
+function openInventoryDetail(airline){
+  const recs=getRecs();
+  const invRecs=recs.filter(r=>r.type==='進貨'&&r.is_inventory&&(r.airline||'未知')===airline);
+  const totalMiles=invRecs.reduce((s,r)=>s+(parseFloat(r.miles)||0),0);
+  const totalCost=invRecs.reduce((s,r)=>s+(parseFloat(r.total)||0)+(parseFloat(r.fee)||0),0);
+  document.getElementById('inv-detail-title').textContent=`${airline} 庫存`;
+  let html=`<div style="background:linear-gradient(135deg,#fff3e0,#ffe0b2);border-radius:14px;padding:16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+    <div><div style="font-size:11px;color:#c96500;font-weight:700;margin-bottom:2px">總庫存</div><div style="font-size:26px;font-weight:900;color:#c96500">${totalMiles}萬哩</div></div>
+    <div style="text-align:right"><div style="font-size:11px;color:var(--txt2);margin-bottom:2px">成本合計</div><div style="font-size:18px;font-weight:800">NT$ ${fmt(totalCost)}</div></div>
+  </div>`;
+  invRecs.forEach(r=>{
+    const miles=parseFloat(r.miles)||0;
+    const cost=(parseFloat(r.total)||0)+(parseFloat(r.fee)||0);
+    html+=`<div style="background:#f9f9f9;border-radius:12px;padding:13px 14px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div>
+          <div style="font-size:14px;font-weight:700">${miles}萬哩</div>
+          <div style="font-size:12px;color:var(--txt2);margin-top:2px">${r.date}${r.seller?' · '+esc(r.seller):''}</div>
+          ${r.note?`<div style="font-size:11px;color:var(--txt3);margin-top:2px">${esc(r.note)}</div>`:''}
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:13px;font-weight:700;color:var(--red)">NT$ ${fmt(cost)}</div>
+          <div style="font-size:11px;color:var(--txt3);margin-top:1px">@${r.unitprice||'?'}/哩</div>
+        </div>
+      </div>
+      <button onclick="closeInvDetail();openInvSell(${r.id},${miles})" style="width:100%;padding:9px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">出售此批哩程</button>
+    </div>`;
+  });
+  document.getElementById('inv-detail-body').innerHTML=html;
+  document.getElementById('modal-inv-detail').classList.add('open');
+}
+function closeInvDetail(){document.getElementById('modal-inv-detail').classList.remove('open');}
+
+let _invSellSrcId=null;
+function openInvSell(recordId,maxMiles){
+  const rec=getRecs().find(r=>r.id===recordId);
+  if(!rec)return;
+  _invSellSrcId=recordId;
+  document.getElementById('inv-sell-title').textContent=`售出 ${rec.airline||''} 庫存`;
+  document.getElementById('inv-sell-src').innerHTML=`來源：<b>${esc(rec.seller||'—')}</b> · ${rec.date} · <b>${maxMiles}萬哩</b> · 成本 NT$ ${fmt((parseFloat(rec.total)||0)+(parseFloat(rec.fee)||0))}`;
+  document.getElementById('inv-sell-miles').value=maxMiles;
+  document.getElementById('inv-sell-miles').max=maxMiles;
+  document.getElementById('inv-sell-vendor').value='';
+  document.getElementById('inv-sell-up').value='';
+  document.getElementById('inv-sell-date').value=today();
+  document.getElementById('inv-sell-note').value='';
+  document.getElementById('modal-inv-sell').classList.add('open');
+}
+function closeInvSell(){document.getElementById('modal-inv-sell').classList.remove('open');}
+function submitInvSell(){
+  const miles=parseFloat(document.getElementById('inv-sell-miles').value);
+  const vendor=document.getElementById('inv-sell-vendor').value.trim();
+  const up=parseFloat(document.getElementById('inv-sell-up').value);
+  const date=document.getElementById('inv-sell-date').value||today();
+  const note=document.getElementById('inv-sell-note').value.trim();
+  if(!miles||isNaN(miles)){toast('請填寫售出萬哩數');return;}
+  if(!vendor){toast('請填寫廠商名稱');return;}
+  if(!up||isNaN(up)){toast('請填寫每萬哩單價');return;}
+  const recs=getRecs();
+  const srcIdx=recs.findIndex(r=>r.id===_invSellSrcId);
+  if(srcIdx<0){toast('找不到原始記錄');return;}
+  const src=recs[srcIdx];
+  const srcMiles=parseFloat(src.miles)||0;
+  const srcTotal=(parseFloat(src.total)||0)+(parseFloat(src.fee)||0);
+  const total=(miles*up).toFixed(0);
+  const newSell={id:Date.now(),type:'出貨',date,vendor,airline:src.airline||'',miles:String(miles),unitprice:String(up),total,payment_status:'unpaid',note:note||`庫存 ${src.seller?esc(src.seller):''}`};
+  const isPartial=miles<srcMiles-0.001;
+  if(isPartial){
+    const remMiles=Math.round((srcMiles-miles)*100)/100;
+    const remCost=Math.round(srcTotal*remMiles/srcMiles);
+    delete recs[srcIdx].is_inventory;
+    const remainder={...src,id:Date.now()+2,miles:String(remMiles),total:String(remCost),fee:undefined,note:`[剩餘庫存] ${src.note||''}`.trim(),is_inventory:true};
+    delete remainder.fee;
+    recs.splice(0,0,remainder);
+  }else{
+    delete recs[srcIdx].is_inventory;
+  }
+  recs.splice(0,0,newSell);
+  saveRecs(recs);
+  const ar=getAR();
+  if(!ar[vendor])ar[vendor]={owed:0};
+  ar[vendor].owed=(ar[vendor].owed||0)+parseFloat(total);
+  saveAR(ar);
+  logActivity('庫存售出',`${src.airline} ${miles}W → ${vendor} @${up}`);
+  closeInvSell();
+  toast(`✓ 出貨記錄已建立，AR +¥${fmt(parseFloat(total))}`);
+  renderRecords();
+  if(document.getElementById('sec-acc').classList.contains('active'))renderAccounts();
+  if(document.getElementById('sec-sum').classList.contains('active'))renderSummary();
+}
+document.getElementById('modal-inv-detail').addEventListener('click',function(e){if(e.target===this)closeInvDetail();});
+document.getElementById('modal-inv-sell').addEventListener('click',function(e){if(e.target===this)closeInvSell();});
+
 function toggleInventory(id){
   const recs=getRecs();
   const idx=recs.findIndex(r=>r.id===id);
@@ -1690,6 +1814,7 @@ setupAC('x-acc','x-acc-ac','payment');
 setupAC('t-vendor','t-vendor-ac','vendor');
 setupAC('t-card','t-card-ac','card');
 setupAC('o-acc','o-acc-ac','payment');
+setupAC('inv-sell-vendor','inv-sell-vendor-ac','vendor');
 </script>
 </body>
 </html>
