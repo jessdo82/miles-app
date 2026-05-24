@@ -61,7 +61,12 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
 .ni.active .ni-icon svg{stroke:var(--blue)}
 .ni.active .ni-lbl{color:var(--blue)}
 
-.card{background:#fff;border-radius:14px;padding:15px 16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.card{background:#fff;border-radius:14px;padding:15px 16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.07);border-left:4px solid transparent}
+.card.c-出貨{border-left-color:var(--blue)}
+.card.c-進貨{border-left-color:var(--green)}
+.card.c-換匯{border-left-color:var(--orange)}
+.card.c-稅金{border-left-color:var(--red)}
+.card.c-其他{border-left-color:var(--purple)}
 .rc-top{display:flex;align-items:center;gap:8px;margin-bottom:9px}
 .badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.2px}
 .b-出貨{background:#e0f0ff;color:var(--blue)}
@@ -89,14 +94,14 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
 .acc-total-label{font-size:11px;color:var(--txt2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .acc-total-val{font-size:30px;font-weight:800;letter-spacing:-.5px}
 
-.sc{background:#fff;border-radius:14px;padding:18px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.sc{background:#fff;border-radius:16px;padding:18px;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.07)}
 .sc-t{font-size:11px;color:var(--txt3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
 .sc-r{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f2f2f7;font-size:14px}
 .sc-r:last-child{border-bottom:none}
 .sc-r>span:first-child{color:var(--txt2)}
 .sc-v{font-weight:700}
-.sc-month{background:#fff;border-radius:16px;padding:0;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,.07);overflow:hidden}
-.sc-month-hd{padding:14px 18px 12px;background:linear-gradient(135deg,#f0f6ff,#f5f0ff);display:flex;justify-content:space-between;align-items:baseline}
+.sc-month{background:#fff;border-radius:18px;padding:0;margin-bottom:14px;box-shadow:0 3px 12px rgba(0,0,0,.09);overflow:hidden}
+.sc-month-hd{padding:16px 18px 13px;background:linear-gradient(135deg,#f0f6ff,#f5f0ff);display:flex;justify-content:space-between;align-items:baseline}
 .sc-month-title{font-size:16px;font-weight:800;letter-spacing:-.3px}
 .sc-month-net{font-size:20px;font-weight:800;letter-spacing:-.5px}
 .sc-month-body{padding:4px 18px 14px}
@@ -269,11 +274,6 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
     <div style="display:flex;gap:8px;margin-bottom:12px">
       <button class="btn-export" style="flex:1;margin:0" onclick="exportJSON()">備份 JSON</button>
       <button class="btn-export" style="flex:1;margin:0" onclick="openImport()">匯入資料</button>
-    </div>
-    <div class="rate-bar">
-      <label>新增紀錄匯率</label>
-      <input type="number" id="est-rate" value="4.7" step="0.01" inputmode="decimal" onchange="renderSummary()" oninput="renderSummary()">
-      <span style="font-size:12px;color:var(--txt3);white-space:nowrap">TWD/RMB</span>
     </div>
     <div id="sum-body"></div>
   </div>
@@ -507,6 +507,8 @@ const saveAR=d=>localStorage.setItem(ARK,JSON.stringify(d));
 const DRK='ml_deleted';
 const getDeleted=()=>JSON.parse(localStorage.getItem(DRK)||'[]');
 const saveDeleted=d=>localStorage.setItem(DRK,JSON.stringify(d));
+function getEstRate(){return parseFloat(localStorage.getItem('ml_est_rate'))||4.66;}
+function saveEstRate(v){const n=parseFloat(v);if(!isNaN(n)&&n>0)localStorage.setItem('ml_est_rate',String(n));}
 
 function learn(field,val){
   if(!val||!val.trim())return;
@@ -874,7 +876,7 @@ function renderRecords(){
   let summaryBar='';
   if(curMonth){
     const allRecs=getRecs();
-    const net=getMonthNet(curMonth,allRecs,getProfits(),getRates(),parseFloat(document.getElementById('est-rate')?.value)||4.7);
+    const net=getMonthNet(curMonth,allRecs,getProfits(),getRates(),getEstRate());
     const sells=list.filter(r=>r.type==='出貨');
     const [y,m]=curMonth.split('-');
     const cls=net>=0?'green':'red';
@@ -900,7 +902,7 @@ function renderRecords(){
     else if(r.type==='換匯'){main=esc(r.channel||'');sub=[r.rate&&'匯率'+r.rate,r.account,r.from_vendor&&'來自 '+r.from_vendor].filter(Boolean).join(' · ');amt=(r.rmb||r.twd)?`<span class="orange">¥${r.rmb}→$${r.twd}</span>`:'';}
     else if(r.type==='稅金'){main=esc(r.vendor||'');sub=[r.card,r.note].filter(Boolean).join(' · ');amt=[r.twd&&`<span class="red">-NT$${r.twd}</span>`,r.rmb&&`<span class="blue">+¥${r.rmb}</span>`].filter(Boolean).join('<br>');}
     else if(r.type==='其他'){main=esc(r.account||'');sub=esc(r.desc||'');const sign=r.dir==='收入'?'+':'-';const cls=r.dir==='收入'?'green':'red';amt=r.amount?`<span class="${cls}">${sign}NT$${r.amount}</span>`:'';}
-    return `<div class="card" onclick="showRecordDetail(${r.id})" style="cursor:pointer"><div class="rc-top"><span class="badge b-${r.type}">${r.type}</span><span class="rc-date">${r.date}</span><button class="rc-del" onclick="event.stopPropagation();delRec(${r.id})">刪除</button></div><div class="rc-body"><div><div class="rc-main">${main}</div><div class="rc-sub">${sub}${r.note&&r.type!=='稅金'&&r.type!=='其他'?'<br><i>'+esc(r.note)+'</i>':''}</div></div><div class="rc-amt">${amt}</div></div></div>`;
+    return `<div class="card c-${r.type}" onclick="showRecordDetail(${r.id})" style="cursor:pointer"><div class="rc-top"><span class="badge b-${r.type}">${r.type}</span><span class="rc-date">${r.date}</span><button class="rc-del" onclick="event.stopPropagation();delRec(${r.id})">刪除</button></div><div class="rc-body"><div><div class="rc-main">${main}</div><div class="rc-sub">${sub}${r.note&&r.type!=='稅金'&&r.type!=='其他'?'<br><i>'+esc(r.note)+'</i>':''}</div></div><div class="rc-amt">${amt}</div></div></div>`;
   }).join('');
   el.innerHTML=summaryBar+`<button class="btn-export" onclick="exportCSV()">${curFilter==='全部'?'匯出全部 CSV':'匯出此類 CSV'}</button>`+cards;
 }
@@ -975,7 +977,7 @@ function calcRange(){
   const recs=getRecs();
   const profits=getProfits();
   const storedRates=getRates();
-  const defRate=parseFloat(document.getElementById('est-rate')?.value)||4.7;
+  const defRate=getEstRate();
   const allMonths=[...new Set([
     ...recs.filter(r=>r.type==='出貨'||r.type==='進貨').map(r=>r.date?.substring(0,7)).filter(Boolean),
     ...Object.keys(profits)
@@ -992,7 +994,7 @@ function showRecordDetail(id){
   if(!rec)return;
   const ym=rec.date?.substring(0,7)||'';
   const storedRates=getRates();
-  const defRate=parseFloat(document.getElementById('est-rate')?.value)||4.7;
+  const defRate=getEstRate();
   const hasPT=r=>r.profit_twd!==undefined&&r.profit_twd!==''&&r.profit_twd!==null;
   const mrate=storedRates[ym]??getActualRate(ym,recs,defRate);
 
@@ -1185,7 +1187,7 @@ function toggleInventory(id){
 // ─── Render Summary ────────────────────────────────────────
 function lockMonth(ym){
   const recs=getRecs(),profits=getProfits(),storedRates=getRates();
-  const defRate=parseFloat(document.getElementById('est-rate')?.value)||4.7;
+  const defRate=getEstRate();
   const net=getMonthNet(ym,recs,profits,storedRates,defRate);
   const [y,m]=ym.split('-');
   if(!confirm(`鎖定 ${y}年${parseInt(m)}月 月結淨利 NT$${fmt(net)}？\n\n鎖定後此月份不會因新增或刪除記錄改變數字。\n（日後可隨時解鎖重新計算）`))return;
@@ -1207,7 +1209,7 @@ function unlockMonth(ym){
 }
 function renderSummary(){
   const recs=getRecs();
-  const rate=parseFloat(document.getElementById('est-rate')?.value)||4.7;
+  const rate=getEstRate();
   const sumF=(list,field)=>list.reduce((s,r)=>s+(parseFloat(r[field])||0),0);
   const profits=getProfits();
   const storedRates=getRates();
@@ -1234,9 +1236,11 @@ function renderSummary(){
     const totalRecs=recsSell.length+recsBuy.length;
 
     const lockBtnStyle='font-size:11px;padding:3px 10px;border-radius:7px;border:1.5px solid #e5e5ea;background:#fff;cursor:pointer;white-space:nowrap';
+    const hdBgLock='background:linear-gradient(135deg,#ede8ff,#dde8ff)';
+    const hdBgProfit=net>=0?'background:linear-gradient(135deg,#edfff4,#d6f9e6)':'background:linear-gradient(135deg,#fff3f3,#fde0e0)';
     if(isConfirmed&&totalRecs===0){
       return `<div class="sc-month">
-        <div class="sc-month-hd">
+        <div class="sc-month-hd" style="${hdBgLock}">
           <span class="sc-month-title">🔒 ${label}</span>
           <span class="sc-month-net ${cls}">NT$ ${fmt(net)}</span>
         </div>
@@ -1248,7 +1252,7 @@ function renderSummary(){
     }
     if(isConfirmed){
       return `<div class="sc-month">
-        <div class="sc-month-hd" onclick="gotoMonth('${ym}')" style="cursor:pointer">
+        <div class="sc-month-hd" onclick="gotoMonth('${ym}')" style="${hdBgLock};cursor:pointer">
           <span class="sc-month-title">🔒 ${label}</span>
           <span style="display:flex;align-items:baseline;gap:8px"><span class="sc-month-net ${cls}">NT$ ${fmt(net)}</span><span style="font-size:11px;color:var(--txt3)">明細 →</span></span>
         </div>
@@ -1289,7 +1293,7 @@ function renderSummary(){
     const cost=recsBuy.reduce((s,r)=>s+(parseFloat(r.total)||0)+(parseFloat(r.fee)||0),0);
     const splitDetail=isSplit?`<div style="font-size:11px;color:var(--txt3);padding:0 0 4px">已換 ¥${fmt(Math.min(totalSellRMB,totalExRMB))} → NT$${fmt(totalExTWD)}・待換 ¥${fmt(pendRMB)} × ${rate} = NT$${fmt(pendRMB*rate)}</div>`:'';
     return `<div class="sc-month">
-      <div class="sc-month-hd" onclick="gotoMonth('${ym}')" style="cursor:pointer">
+      <div class="sc-month-hd" onclick="gotoMonth('${ym}')" style="${hdBgProfit};cursor:pointer">
         <span class="sc-month-title">${label}</span>
         <span style="display:flex;align-items:baseline;gap:8px"><span class="sc-month-net ${cls}">NT$ ${fmt(net)}</span><span style="font-size:11px;color:var(--txt3)">明細 →</span></span>
       </div>
@@ -1312,11 +1316,14 @@ function renderSummary(){
   const lastSync=localStorage.getItem('ml_last_sync');
   document.getElementById('sum-body').innerHTML=`
   ${lastSync?`<div style="text-align:center;font-size:12px;color:var(--txt3);margin-bottom:10px">上次同步 ${lastSync}</div>`:''}
-  <div class="sc" style="margin-bottom:16px">
-    <div class="sc-t">累計淨利</div>
-    <div class="sc-r"><span style="font-weight:700;color:var(--txt)">總淨利</span><div style="display:flex;align-items:center;gap:10px"><span class="sc-v ${totalNet>=0?'green':'red'}" style="font-size:18px">${localStorage.getItem('ml_hide_profit')==='1'?'••••••••':`NT$ ${fmt(totalNet)}`}</span><button onclick="localStorage.setItem('ml_hide_profit',localStorage.getItem('ml_hide_profit')==='1'?'0':'1');renderSummary()" style="font-size:16px;border:none;background:none;cursor:pointer;color:var(--txt3);padding:0;line-height:1">${localStorage.getItem('ml_hide_profit')==='1'?'🙈':'👁'}</button></div></div>
+  <div style="background:linear-gradient(135deg,${totalNet>=0?'#e8fdf0,#d4f5e7':'#fff5f5,#fde8e8'});border-radius:20px;padding:22px 20px;margin-bottom:14px;box-shadow:0 3px 14px rgba(0,0,0,.09)">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${totalNet>=0?'#1a7a36':'#c0392b'};margin-bottom:8px">累計總淨利</div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:34px;font-weight:900;letter-spacing:-.8px;color:${totalNet>=0?'var(--green)':'var(--red)'}">${localStorage.getItem('ml_hide_profit')==='1'?'••••••••':`NT$ ${fmt(totalNet)}`}</div>
+      <button onclick="localStorage.setItem('ml_hide_profit',localStorage.getItem('ml_hide_profit')==='1'?'0':'1');renderSummary()" style="font-size:20px;border:none;background:rgba(255,255,255,.6);border-radius:10px;width:40px;height:40px;cursor:pointer;color:var(--txt2);display:flex;align-items:center;justify-content:center">${localStorage.getItem('ml_hide_profit')==='1'?'🙈':'👁'}</button>
+    </div>
   </div>
-  <div class="sc" style="margin-bottom:16px">
+  <div class="sc" style="margin-bottom:14px">
     <div class="sc-t">區間淨利試算</div>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
       <input type="date" id="range-from" value="${rfCurrent}" style="${inputStyle}" onchange="rangeFrom=this.value;calcRange()">
@@ -1333,7 +1340,7 @@ function renderSummary(){
       const v2=vendor.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       const amtSpan=isOwed?`<span class="sc-v red">¥ ${fmt(owed)}</span>`:`<span class="sc-v green" style="font-size:12px">已結清</span>`;
       const settleBtn=isOwed?`<button onclick="markVendorReceived('${v2}')" style="${btnStyle};color:var(--txt2)">全結</button>`:'';
-      return `<div class="sc-r"><span style="flex:1">${esc(vendor)}</span><div style="display:flex;align-items:center;gap:5px">${amtSpan}${settleBtn}<button onclick="editARAmount('${v2}')" style="${btnStyle};color:var(--txt3)">✏</button><button onclick="deleteAREntry('${v2}')" style="${btnStyle};color:#ff3b30;border-color:#ffd0ce">✕</button></div></div>`;
+      return `<div class="sc-r"><span style="flex:1;font-weight:500">${esc(vendor)}</span><div style="display:flex;align-items:center;gap:5px">${amtSpan}${settleBtn}<button onclick="editARAmount('${v2}')" style="${btnStyle};color:var(--txt3)">✏</button><button onclick="deleteAREntry('${v2}')" style="${btnStyle};color:#ff3b30;border-color:#ffd0ce">✕</button></div></div>`;
     };
     const owedEntries=Object.entries(ar).filter(([,v])=>(v.owed||0)>0).sort((a,b)=>b[1].owed-a[1].owed);
     const settledEntries=Object.entries(ar).filter(([,v])=>(v.owed||0)<=0);
@@ -1341,13 +1348,22 @@ function renderSummary(){
     const owedRows=owedEntries.map(([v,{owed}])=>mkRow(v,owed)).join('');
     const settledRows=settledEntries.map(([v,{owed}])=>mkRow(v,owed)).join('');
     const settledToggle=settledEntries.length?`<div style="margin-top:8px"><button onclick="const el=document.getElementById('ar-settled');el.style.display=el.style.display==='none'?'block':'none';this.textContent=el.style.display==='none'?'已結清（${settledEntries.length}）▼':'已結清（${settledEntries.length}）▲'" style="${btnStyle};color:var(--txt3);width:100%">已結清（${settledEntries.length}）▼</button><div id="ar-settled" style="display:none;margin-top:4px">${settledRows}</div></div>`:'';
-    return `<div class="sc" style="margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div class="sc-t" style="margin-bottom:0">廠商應收帳款</div>
-        <button onclick="addAREntry()" style="${btnStyle};color:var(--txt2)">＋ 新增廠商</button>
+    const rateRow=`<div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1.5px solid #f2f2f7">
+      <span style="font-size:12px;font-weight:700;color:var(--txt3);white-space:nowrap">待換匯率</span>
+      <input type="number" id="est-rate" value="${rate}" step="0.001" inputmode="decimal"
+        style="width:72px;padding:7px 10px;font-size:14px;font-weight:700;border:1.5px solid #e5e5ea;border-radius:9px;text-align:center;background:#fff;color:var(--txt)"
+        oninput="saveEstRate(this.value);renderSummary()" onclick="event.stopPropagation()">
+      <span style="font-size:12px;color:var(--txt3)">TWD/CNY</span>
+      ${totalOwed>0?`<span style="flex:1;text-align:right;font-size:14px;font-weight:700;color:var(--orange)">≈ NT$ ${fmt(totalOwed*rate)}</span>`:'<span style="flex:1;text-align:right;font-size:12px;color:var(--txt3)">無待換金額</span>'}
+    </div>`;
+    return `<div class="sc" style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:800;color:var(--txt);letter-spacing:-.2px">廠商應收帳款</div>
+        <button onclick="addAREntry()" style="${btnStyle};color:var(--blue);border-color:rgba(0,122,255,.3)">＋ 新增廠商</button>
       </div>
       ${owedRows||'<div style="padding:8px 0;color:var(--txt3);font-size:13px;text-align:center">目前無未結清款項</div>'}
-      ${totalOwed>0?`<div class="sc-r" style="margin-top:6px;border-top:1px solid #f2f2f7;padding-top:10px"><span style="font-weight:700;color:var(--txt)">合計未收</span><span class="sc-v red" style="font-size:15px">¥ ${fmt(totalOwed)}</span></div>`:''}
+      ${totalOwed>0?`<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:10px;border-top:1.5px solid #f2f2f7"><span style="font-weight:700;color:var(--txt);font-size:14px">合計待換</span><span style="font-size:18px;font-weight:800;color:var(--red)">¥ ${fmt(totalOwed)}</span></div>`:''}
+      ${rateRow}
       ${settledToggle}
     </div>`;
   })()}
