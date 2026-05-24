@@ -183,7 +183,8 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
         <div class="fg"><label>台幣（TWD）</label><input type="number" id="x-twd" placeholder="TWD" inputmode="decimal"></div>
       </div>
       <div class="fg"><label>匯率（TWD/CNY）</label><input type="number" id="x-rate" class="calc" placeholder="自動計算" inputmode="decimal" step="0.001"></div>
-      <div class="fg"><label>收款帳戶</label><div class="acw"><input type="text" id="x-acc" placeholder="台幣匯入哪個帳戶" autocomplete="off"><div class="acl" id="x-acc-ac"></div></div></div>
+      <div class="fg"><label>支出人民幣帳戶 <span style="font-size:11px;color:#999;font-weight:400">（選填，從哪個 CNY 帳戶換出）</span></label><select id="x-from-acc" style="width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid #e5e5ea;background:#fff;font-size:15px;color:var(--txt);appearance:none;-webkit-appearance:none"><option value="">— 不選 —</option></select></div>
+      <div class="fg"><label>收款帳戶（TWD）</label><div class="acw"><input type="text" id="x-acc" placeholder="台幣匯入哪個帳戶" autocomplete="off"><div class="acl" id="x-acc-ac"></div></div></div>
       <div class="fg">
         <label>款項來自廠商 <span style="font-size:11px;color:#999;font-weight:400">（選填，自動扣除應收帳款）</span></label>
         <select id="x-from" style="width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid #e5e5ea;background:#fff;font-size:15px;color:var(--txt);appearance:none;-webkit-appearance:none" onchange="document.getElementById('x-from-hint').textContent=this.value?'將從應收帳款扣除 ¥'+document.getElementById('x-rmb').value:''">
@@ -298,15 +299,16 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
     <div class="modal-title" id="modal-acc-title">新增帳戶</div>
     <div class="fg"><label>帳戶名稱</label><div class="acw"><input type="text" id="ma-name" placeholder="例：玉山A" autocomplete="off"><div class="acl" id="ma-name-ac"></div></div></div>
     <div class="fg"><label>類型</label>
-      <select id="ma-type">
+      <select id="ma-type" onchange="document.getElementById('ma-bal-label').textContent=this.value==='人民幣帳戶'?'目前餘額（CNY）':'目前餘額（TWD）'">
         <option value="銀行">銀行</option>
         <option value="電子支付">電子支付</option>
         <option value="現金">現金</option>
+        <option value="人民幣帳戶">人民幣帳戶（CNY）</option>
         <option value="借出">借出/代管</option>
         <option value="其他">其他</option>
       </select>
     </div>
-    <div class="fg"><label>目前餘額（TWD）</label><input type="number" id="ma-bal" placeholder="從 Moze 輸入目前金額" inputmode="decimal"></div>
+    <div class="fg"><label id="ma-bal-label">目前餘額（TWD）</label><input type="number" id="ma-bal" placeholder="從 Moze 輸入目前金額" inputmode="decimal"></div>
     <div style="display:flex;gap:10px;margin-top:8px">
       <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeAccModal()">取消</button>
       <button class="btn btn-sm" style="flex:1" onclick="saveAccount()">儲存</button>
@@ -555,12 +557,14 @@ function submit(type){
   }else if(type==='換匯'){
     if(!v('x-ch')){toast('請填寫換匯管道');return;}
     const fromVendor=document.getElementById('x-from')?.value||'';
-    Object.assign(rec,{date:v('x-date')||today(),channel:v('x-ch'),rmb:v('x-rmb'),twd:v('x-twd'),rate:v('x-rate'),account:v('x-acc'),from_vendor:fromVendor,note:v('x-note')});
+    const fromAccount=document.getElementById('x-from-acc')?.value||'';
+    Object.assign(rec,{date:v('x-date')||today(),channel:v('x-ch'),rmb:v('x-rmb'),twd:v('x-twd'),rate:v('x-rate'),account:v('x-acc'),from_vendor:fromVendor,from_account:fromAccount,note:v('x-note')});
     learn('channel',rec.channel);learn('payment',rec.account);
     // Deduct from AR when vendor is specified
     if(fromVendor&&rec.rmb){const ar=getAR();if(ar[fromVendor]){ar[fromVendor].owed=(ar[fromVendor].owed||0)-(parseFloat(rec.rmb)||0);saveAR(ar);}}
     clear('x-ch','x-rmb','x-twd','x-rate','x-acc','x-note');
     if(document.getElementById('x-from'))document.getElementById('x-from').value='';
+    if(document.getElementById('x-from-acc'))document.getElementById('x-from-acc').value='';
   }else if(type==='稅金'){
     if(!v('t-vendor')){toast('請填寫廠商');return;}
     Object.assign(rec,{date:v('t-date')||today(),vendor:v('t-vendor'),twd:v('t-twd'),rmb:v('t-rmb'),card:v('t-card'),note:v('t-note')});
@@ -581,18 +585,29 @@ function clear(...ids){ids.forEach(id=>{const el=document.getElementById(id);if(
 function getBalance(accName){
   const accounts=getAccounts();
   const acc=accounts.find(a=>a.name===accName);
+  const isCNY=acc?.type==='人民幣帳戶';
   const start=acc?parseFloat(acc.startBalance)||0:0;
   const recs=getRecs();
   let delta=0;
-  recs.forEach(r=>{
-    if(r.type==='進貨'&&r.payment===accName) delta-=(parseFloat(r.total)||0)+(parseFloat(r.fee)||0);
-    if(r.type==='換匯'&&r.account===accName) delta+=parseFloat(r.twd)||0;
-    if(r.type==='稅金'&&r.card===accName) delta-=parseFloat(r.twd)||0;
-    if(r.type==='其他'&&r.account===accName){
-      if(r.dir==='收入') delta+=parseFloat(r.amount)||0;
-      else delta-=parseFloat(r.amount)||0;
-    }
-  });
+  if(isCNY){
+    recs.forEach(r=>{
+      if(r.type==='出貨'&&r.payment_status==='paid'&&r.paid_to===accName) delta+=parseFloat(r.total)||0;
+      if(r.type==='換匯'&&r.from_account===accName) delta-=parseFloat(r.rmb)||0;
+    });
+    // AR settlements: vendor paid later and money went to this account
+    const ar=getAR();
+    Object.values(ar).forEach(e=>{if(e.settled_to===accName&&e.settled_amount)delta+=parseFloat(e.settled_amount)||0;});
+  }else{
+    recs.forEach(r=>{
+      if(r.type==='進貨'&&r.payment===accName) delta-=(parseFloat(r.total)||0)+(parseFloat(r.fee)||0);
+      if(r.type==='換匯'&&r.account===accName) delta+=parseFloat(r.twd)||0;
+      if(r.type==='稅金'&&r.card===accName) delta-=parseFloat(r.twd)||0;
+      if(r.type==='其他'&&r.account===accName){
+        if(r.dir==='收入') delta+=parseFloat(r.amount)||0;
+        else delta-=parseFloat(r.amount)||0;
+      }
+    });
+  }
   return start+delta;
 }
 
@@ -604,22 +619,27 @@ function renderAccounts(){
     el.innerHTML=`<div class="empty">還沒有帳戶<br><br><button class="btn" onclick="openAccModal()">新增第一個帳戶</button></div>`;
     return;
   }
-  const types=['銀行','電子支付','現金','借出','其他'];
+  const types=['銀行','電子支付','現金','人民幣帳戶','借出','其他'];
   const grouped={};
   types.forEach(t=>grouped[t]=[]);
   accounts.forEach(a=>{const t=a.type||'其他';if(!grouped[t])grouped[t]=[];grouped[t].push(a);});
-  const totalBal=accounts.reduce((s,a)=>s+getBalance(a.name),0);
-  let html=`<div class="acc-total"><div class="acc-total-label">總資產</div><div class="acc-total-val">NT$ ${fmt(totalBal)}</div></div>`;
+  const twdAccs=accounts.filter(a=>a.type!=='人民幣帳戶');
+  const cnyAccs=accounts.filter(a=>a.type==='人民幣帳戶');
+  const totalTWD=twdAccs.reduce((s,a)=>s+getBalance(a.name),0);
+  const totalCNY=cnyAccs.reduce((s,a)=>s+getBalance(a.name),0);
+  let html=`<div class="acc-total"><div class="acc-total-label">台幣總資產</div><div class="acc-total-val">NT$ ${fmt(totalTWD)}</div></div>`;
+  if(cnyAccs.length)html+=`<div class="acc-total" style="margin-top:4px"><div class="acc-total-label">人民幣帳戶</div><div class="acc-total-val" style="color:#c96500">¥ ${fmt(totalCNY)}</div></div>`;
   types.forEach(t=>{
     if(!grouped[t]||!grouped[t].length)return;
+    const isCNYType=t==='人民幣帳戶';
     const subtotal=grouped[t].reduce((s,a)=>s+getBalance(a.name),0);
-    html+=`<div class="acc-section"><div class="acc-section-title">${t} &nbsp;NT$ ${fmt(subtotal)}</div>`;
+    html+=`<div class="acc-section"><div class="acc-section-title">${t} &nbsp;${isCNYType?'¥':'NT$'} ${fmt(subtotal)}</div>`;
     grouped[t].forEach(a=>{
       const bal=getBalance(a.name);
       const cls=bal>=0?'pos':'neg';
       html+=`<div class="acc-row" onclick="openAccModal(${a.id})">
         <span class="acc-name">${esc(a.name)}</span>
-        <span class="acc-bal ${cls}">NT$ ${fmt(bal)}</span>
+        <span class="acc-bal ${cls}">${isCNYType?'¥':'NT$'} ${fmt(bal)}</span>
       </div>`;
     });
     html+='</div>';
@@ -946,6 +966,12 @@ function showRecordDetail(id){
       </div>`
     :(rec.type==='出貨'||rec.type==='進貨'?`<div style="margin-top:14px;padding:12px;background:#f9f9f9;border-radius:12px;text-align:center;color:var(--txt3);font-size:13px">未找到關聯記錄，無法計算單筆利潤</div>`:'');
 
+  const payBadge=rec.type==='出貨'
+    ?(rec.payment_status==='paid'
+      ?`<div style="margin-top:8px;font-size:13px"><span style="background:#d4f4dd;color:#1a7a36;border-radius:6px;padding:3px 9px;font-weight:600">✓ 已付款</span>${rec.paid_to?` → <span style="color:var(--txt2)">${esc(rec.paid_to)}</span>`:''}</div>`
+      :`<div style="margin-top:8px;font-size:13px"><span style="background:#fff3cd;color:#856404;border-radius:6px;padding:3px 9px;font-weight:600">⏳ 未付款</span> <span style="color:var(--txt3);font-size:12px">（應收帳款中）</span></div>`)
+    :'';
+
   document.getElementById('modal-deal-title').textContent=`${rec.type} · ${rec.date}`;
   document.getElementById('modal-deal-body').innerHTML=`
     <div style="background:#f9f9f9;border-radius:12px;padding:14px">
@@ -953,6 +979,7 @@ function showRecordDetail(id){
       ${subLine?`<div style="font-size:13px;color:var(--txt2);margin-bottom:4px">${subLine}</div>`:''}
       ${rec.note?`<div style="font-size:12px;color:var(--txt3)">${esc(rec.note)}</div>`:''}
       <div style="margin-top:10px;font-size:16px;font-weight:700">${amtLine}</div>
+      ${payBadge}
     </div>
     ${relatedHTML}${profitHTML}`;
   document.getElementById('modal-deal').classList.add('open');
@@ -1084,11 +1111,19 @@ function renderSummary(){
 function markVendorReceived(vendor){
   const ar=getAR();
   if(!ar[vendor])return;
+  const owed=ar[vendor].owed||0;
+  const cnyAccs=getAccounts().filter(a=>a.type==='人民幣帳戶').map(a=>a.name);
+  const hint=cnyAccs.length?`\n可選：${cnyAccs.join('、')}`:'\n（可輸入支付寶、銀行帳號等）';
+  const dest=prompt(`¥${fmt(owed)} 款項收到哪個帳戶？${hint}\n\n留空則只標記結清，不更新帳戶餘額`,'');
+  if(dest===null)return;
+  ar[vendor].settled_amount=owed;
+  ar[vendor].settled_to=dest.trim()||'';
+  ar[vendor].settled_at=new Date().toISOString().slice(0,10);
   ar[vendor].owed=0;
   saveAR(ar);
   renderSummary();
   populateExchangeVendors();
-  toast(`${vendor} 已標記全結清`);
+  toast(`${vendor} 已全結清${dest.trim()?'，¥'+fmt(owed)+' → '+dest.trim():''}`);
 }
 function editARAmount(vendor){
   const ar=getAR();
@@ -1141,6 +1176,21 @@ function populateExchangeVendors(){
     });
 }
 
+function populateCNYAccounts(){
+  const sel=document.getElementById('x-from-acc');
+  if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— 不選 —</option>';
+  getAccounts().filter(a=>a.type==='人民幣帳戶').forEach(a=>{
+    const opt=document.createElement('option');
+    opt.value=a.name;
+    const bal=getBalance(a.name);
+    opt.textContent=`${a.name}（¥${fmt(bal)} 餘額）`;
+    if(a.name===cur)opt.selected=true;
+    sel.appendChild(opt);
+  });
+}
+
 // ─── Export CSV ────────────────────────────────────────────
 function exportCSV(){
   const recs=getRecs();
@@ -1186,7 +1236,7 @@ document.querySelectorAll('#atabs .tab').forEach(tab=>{
     document.querySelectorAll('#atabs .tab').forEach(t=>t.classList.remove('active'));
     tab.classList.add('active');
     ['出貨','進貨','換匯','稅金','其他'].forEach(x=>document.getElementById('form-'+x).style.display=x===f?'block':'none');
-    if(f==='換匯')populateExchangeVendors();
+    if(f==='換匯'){populateExchangeVendors();populateCNYAccounts();}
   });
 });
 document.querySelectorAll('#ftabs .tab').forEach(tab=>{
