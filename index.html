@@ -890,7 +890,10 @@ function getMonthNet(ym,recs,profits,storedRates,defRate){
   return withP.length>0&&withoutP.length===0?directP:directP+calcRev-cost;
 }
 
-let rangeFrom='',rangeTo='';
+const _now=new Date();
+const _y=_now.getFullYear(),_m=String(_now.getMonth()+1).padStart(2,'0');
+const _lastDay=new Date(_y,_now.getMonth()+1,0).getDate();
+let rangeFrom=`${_y}-${_m}-01`,rangeTo=`${_y}-${_m}-${String(_lastDay).padStart(2,'0')}`;
 function calcRange(){
   const fromVal=document.getElementById('range-from')?.value;
   const toVal=document.getElementById('range-to')?.value;
