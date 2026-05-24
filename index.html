@@ -882,11 +882,27 @@ function getMonthNet(ym,recs,profits,storedRates,defRate){
   const buys=mr.filter(r=>r.type==='進貨');
   const withP=sells.filter(hasPT);
   const withoutP=sells.filter(r=>!hasPT(r));
-  // Priority: actual 換匯 rate > per-month stored rate > estimated default
-  const mrate=storedRates[ym]??getActualRate(ym,recs,defRate);
   const directP=withP.reduce((s,r)=>s+(parseFloat(r.profit_twd)||0),0);
-  const calcRev=withoutP.reduce((s,r)=>s+(r.twd?parseFloat(r.twd):(parseFloat(r.total)||0)*mrate),0);
   const cost=buys.reduce((s,r)=>s+(parseFloat(r.total)||0)+(parseFloat(r.fee)||0),0);
+  if(storedRates[ym]!==undefined){
+    const mrate=storedRates[ym];
+    const calcRev=withoutP.reduce((s,r)=>s+(r.twd?parseFloat(r.twd):(parseFloat(r.total)||0)*mrate),0);
+    return withP.length>0&&withoutP.length===0?directP:directP+calcRev-cost;
+  }
+  // Split rate: exchanged portion uses actual TWD received; unexchanged uses defRate estimate
+  const ex=recs.filter(r=>r.type==='換匯'&&r.date?.startsWith(ym)&&r.rmb&&r.twd);
+  const totalExRMB=ex.reduce((s,r)=>s+(parseFloat(r.rmb)||0),0);
+  const totalExTWD=ex.reduce((s,r)=>s+(parseFloat(r.twd)||0),0);
+  const totalSellRMB=withoutP.reduce((s,r)=>s+(parseFloat(r.total)||0),0);
+  let calcRev;
+  if(totalExRMB===0){
+    calcRev=totalSellRMB*defRate;
+  }else if(totalExRMB>=totalSellRMB){
+    calcRev=totalSellRMB*(totalExTWD/totalExRMB);
+  }else{
+    // Partial: actual TWD received + remaining at estimated rate
+    calcRev=totalExTWD+(totalSellRMB-totalExRMB)*defRate;
+  }
   return withP.length>0&&withoutP.length===0?directP:directP+calcRev-cost;
 }
 
@@ -1093,6 +1109,28 @@ function showRecordDetail(id){
 function closeRecordDetail(){document.getElementById('modal-deal').classList.remove('open');}
 
 // ─── Render Summary ────────────────────────────────────────
+function lockMonth(ym){
+  const recs=getRecs(),profits=getProfits(),storedRates=getRates();
+  const defRate=parseFloat(document.getElementById('est-rate')?.value)||4.7;
+  const net=getMonthNet(ym,recs,profits,storedRates,defRate);
+  const [y,m]=ym.split('-');
+  if(!confirm(`鎖定 ${y}年${parseInt(m)}月 月結淨利 NT$${fmt(net)}？\n\n鎖定後此月份不會因新增或刪除記錄改變數字。\n（日後可隨時解鎖重新計算）`))return;
+  profits[ym]=net;
+  saveProfits(profits);
+  logActivity('鎖定月份',`${ym} NT$${fmt(net)}`);
+  renderSummary();
+  toast(`🔒 ${y}年${parseInt(m)}月 已鎖定`);
+}
+function unlockMonth(ym){
+  const [y,m]=ym.split('-');
+  if(!confirm(`解鎖 ${y}年${parseInt(m)}月？\n解鎖後將重新從紀錄動態計算。`))return;
+  const profits=getProfits();
+  delete profits[ym];
+  saveProfits(profits);
+  logActivity('解鎖月份',ym);
+  renderSummary();
+  toast(`🔓 ${y}年${parseInt(m)}月 已解鎖`);
+}
 function renderSummary(){
   const recs=getRecs();
   const rate=parseFloat(document.getElementById('est-rate')?.value)||4.7;
@@ -1121,42 +1159,61 @@ function renderSummary(){
     const taxLine=taxR.length?`<div class="sc-r"><span>代付稅金</span><span class="sc-v red">-NT$ ${fmt(sumF(taxR,'twd'))}</span></div>`:'';
     const totalRecs=recsSell.length+recsBuy.length;
 
+    const lockBtnStyle='font-size:11px;padding:3px 10px;border-radius:7px;border:1.5px solid #e5e5ea;background:#fff;cursor:pointer;white-space:nowrap';
     if(isConfirmed&&totalRecs===0){
       return `<div class="sc-month">
         <div class="sc-month-hd">
-          <span class="sc-month-title">${label}</span>
+          <span class="sc-month-title">🔒 ${label}</span>
           <span class="sc-month-net ${cls}">NT$ ${fmt(net)}</span>
         </div>
         <div class="sc-month-body">
-          <div class="sc-r"><span style="font-weight:600;color:var(--txt)">確認淨利</span><span class="sc-v ${cls}" style="font-size:15px">NT$ ${fmt(net)}</span></div>
+          <div class="sc-r"><span style="font-weight:600;color:var(--txt)">已鎖定淨利</span><span class="sc-v ${cls}" style="font-size:15px">NT$ ${fmt(net)}</span></div>
+          <div style="text-align:right;margin-top:6px"><button onclick="unlockMonth('${ym}')" style="${lockBtnStyle};color:var(--txt3)">🔓 解鎖重算</button></div>
         </div>
       </div>`;
     }
     if(isConfirmed){
       return `<div class="sc-month">
         <div class="sc-month-hd" onclick="gotoMonth('${ym}')" style="cursor:pointer">
-          <span class="sc-month-title">${label}</span>
+          <span class="sc-month-title">🔒 ${label}</span>
           <span style="display:flex;align-items:baseline;gap:8px"><span class="sc-month-net ${cls}">NT$ ${fmt(net)}</span><span style="font-size:11px;color:var(--txt3)">明細 →</span></span>
         </div>
         <div class="sc-month-body">
           <div class="sc-r"><span>出貨 ${recsSell.length} 筆 ／ 進貨 ${recsBuy.length} 筆</span><span class="sc-v" style="color:var(--txt3)">共 ${totalRecs} 筆</span></div>
           ${taxLine}
-          <div class="sc-r"><span style="font-weight:600;color:var(--txt)">確認淨利</span><span class="sc-v ${cls}" style="font-size:15px">NT$ ${fmt(net)}</span></div>
+          <div class="sc-r"><span style="font-weight:600;color:var(--txt)">已鎖定淨利</span><span class="sc-v ${cls}" style="font-size:15px">NT$ ${fmt(net)}</span></div>
+          <div style="text-align:right;margin-top:6px"><button onclick="unlockMonth('${ym}')" style="${lockBtnStyle};color:var(--txt3)">🔓 解鎖重算</button></div>
         </div>
       </div>`;
     }
     const hasPT=r=>r.profit_twd!==undefined&&r.profit_twd!==''&&r.profit_twd!==null;
     const withoutProfit=recsSell.filter(r=>!hasPT(r));
-    // Determine actual vs estimated rate
     const hasStoredRate=storedRates[ym]!==undefined;
-    const actualMonthRate=getActualRate(ym,recs,rate);
-    const mrate=hasStoredRate?storedRates[ym]:actualMonthRate;
-    const hasActualEx=recs.some(r=>r.type==='換匯'&&r.date?.startsWith(ym)&&r.rmb&&r.twd);
-    const rateLabel=hasStoredRate?'手動':'實際換匯均值';
-    const rateNote=hasActualEx&&!hasStoredRate?`<span style="font-size:10px;color:#34a853;margin-left:4px">（${rateLabel}）</span>`:`<span style="font-size:10px;color:#999;margin-left:4px">（估算）</span>`;
-    const rmb=sumF(withoutProfit,'total');
-    const calcRevTwd=withoutProfit.reduce((s,r)=>s+(r.twd?parseFloat(r.twd):(parseFloat(r.total)||0)*mrate),0);
-    const cost=sumF(recsBuy,'total');
+    // Split rate breakdown
+    const exRecs=recs.filter(r=>r.type==='換匯'&&r.date?.startsWith(ym)&&r.rmb&&r.twd);
+    const totalExRMB=exRecs.reduce((s,r)=>s+(parseFloat(r.rmb)||0),0);
+    const totalExTWD=exRecs.reduce((s,r)=>s+(parseFloat(r.twd)||0),0);
+    const actualRate=totalExRMB>0?totalExTWD/totalExRMB:0;
+    const totalSellRMB=withoutProfit.reduce((s,r)=>s+(parseFloat(r.total)||0),0);
+    const pendRMB=Math.max(0,totalSellRMB-totalExRMB);
+    const isSplit=!hasStoredRate&&totalExRMB>0&&pendRMB>0;
+    const mrate=hasStoredRate?storedRates[ym]:(totalExRMB>0?actualRate:rate);
+    let rateDisplay,calcRevTwd;
+    if(hasStoredRate){
+      rateDisplay=`手動 ${storedRates[ym].toFixed(4)}`;
+      calcRevTwd=withoutProfit.reduce((s,r)=>s+(parseFloat(r.total)||0)*storedRates[ym],0);
+    }else if(isSplit){
+      rateDisplay=`已換 @${actualRate.toFixed(4)} + 待換 @${rate}（估）`;
+      calcRevTwd=totalExTWD+pendRMB*rate;
+    }else if(totalExRMB>0){
+      rateDisplay=`實際均值 ${actualRate.toFixed(4)}`;
+      calcRevTwd=totalSellRMB*actualRate;
+    }else{
+      rateDisplay=`估算 ${rate}`;
+      calcRevTwd=totalSellRMB*rate;
+    }
+    const cost=recsBuy.reduce((s,r)=>s+(parseFloat(r.total)||0)+(parseFloat(r.fee)||0),0);
+    const splitDetail=isSplit?`<div style="font-size:11px;color:var(--txt3);padding:0 0 4px">已換 ¥${fmt(Math.min(totalSellRMB,totalExRMB))} → NT$${fmt(totalExTWD)}・待換 ¥${fmt(pendRMB)} × ${rate} = NT$${fmt(pendRMB*rate)}</div>`:'';
     return `<div class="sc-month">
       <div class="sc-month-hd" onclick="gotoMonth('${ym}')" style="cursor:pointer">
         <span class="sc-month-title">${label}</span>
@@ -1164,13 +1221,16 @@ function renderSummary(){
       </div>
       <div class="sc-month-body">
         <div class="sc-r" style="padding:6px 0 10px">
-          <span style="color:var(--txt2)">匯率${rateNote}</span>
-          <input type="number" value="${mrate.toFixed(4)}" step="0.01" inputmode="decimal" style="width:80px;padding:6px 10px;font-size:14px;font-weight:600;border-radius:8px;text-align:right" onchange="setMonthRate('${ym}',this.value)" oninput="setMonthRate('${ym}',this.value)" onclick="event.stopPropagation()">
+          <span style="color:var(--txt2);font-size:13px">${rateDisplay}</span>
+          ${hasStoredRate?`<input type="number" value="${storedRates[ym].toFixed(4)}" step="0.01" inputmode="decimal" style="width:80px;padding:6px 10px;font-size:14px;font-weight:600;border-radius:8px;text-align:right" onchange="setMonthRate('${ym}',this.value)" onclick="event.stopPropagation()">`:
+          `<input type="number" placeholder="${rate}" step="0.01" inputmode="decimal" style="width:80px;padding:6px 10px;font-size:14px;font-weight:600;border-radius:8px;text-align:right;background:#f9f9f9;color:var(--txt3)" title="手動鎖定匯率（覆蓋估算）" onchange="setMonthRate('${ym}',this.value)" onclick="event.stopPropagation()">`}
         </div>
-        <div class="sc-r"><span>出貨收入</span><span class="sc-v blue">¥ ${fmt(rmb)} × ${mrate.toFixed(4)} = NT$ ${fmt(calcRevTwd)}</span></div>
+        ${splitDetail}
+        <div class="sc-r"><span>出貨收入</span><span class="sc-v blue">NT$ ${fmt(calcRevTwd)}</span></div>
         <div class="sc-r"><span>進貨成本</span><span class="sc-v red">-NT$ ${fmt(cost)}</span></div>
         ${taxLine}
         <div class="sc-r"><span style="font-weight:600;color:var(--txt)">淨利</span><span class="sc-v ${cls}" style="font-size:15px">NT$ ${fmt(net)}</span></div>
+        <div style="text-align:right;margin-top:8px"><button onclick="lockMonth('${ym}')" style="${lockBtnStyle};color:#1a7a36;border-color:#b8e6c4">🔒 鎖定月結</button></div>
       </div>
     </div>`;
   }).join('');
