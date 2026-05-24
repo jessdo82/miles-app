@@ -349,19 +349,26 @@ async function syncCloud(){
     }
     const cloud=await res.json();
 
-    // 2. 合併 records（雲端優先：雲端版本為主，本地補充雲端沒有的新紀錄）
-    const localRecs=getRecs();
-    const cloudMap=new Map(Array.isArray(cloud?.records)?cloud.records.map(r=>[r.id,r]):[]);
+    // 2. 合併刪除清單（雙向：本機刪了 + 雲端刪了都要保留）
+    const localDeleted=getDeleted();
+    const cloudDeleted=Array.isArray(cloud?.deleted)?cloud.deleted:[];
+    const allDeleted=[...new Set([...localDeleted,...cloudDeleted])];
+    saveDeleted(allDeleted);
+
+    // 3. 合併 records（先過濾已刪除的 ID，再合併本機新增）
+    const localRecs=getRecs().filter(r=>!allDeleted.includes(r.id));
+    const cloudRecs=(Array.isArray(cloud?.records)?cloud.records:[]).filter(r=>!allDeleted.includes(r.id));
+    const cloudMap=new Map(cloudRecs.map(r=>[r.id,r]));
     const localOnlyRecs=localRecs.filter(r=>!cloudMap.has(r.id));
     const mergedRecs=[...cloudMap.values(),...localOnlyRecs].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.id-a.id));
 
-    // 3. 合併 accounts（雲端優先）
+    // 4. 合併 accounts（雲端優先，過濾已刪除）
     const localAccs=getAccounts();
     const cloudAccMap=new Map(Array.isArray(cloud?.accounts)?cloud.accounts.map(a=>[a.id,a]):[]);
     const localOnlyAccs=localAccs.filter(a=>!cloudAccMap.has(a.id));
     const mergedAccs=[...cloudAccMap.values(),...localOnlyAccs];
 
-    // 4. 合併 rates / profits（本地優先）
+    // 5. 合併 rates / profits（本地優先）
     const mergedRates={...(cloud?.rates||{}),...getRates()};
     const mergedProfits={...(cloud?.profits||{}),...getProfits()};
 
@@ -370,9 +377,9 @@ async function syncCloud(){
     saveRates(mergedRates);
     saveProfits(mergedProfits);
 
-    // 5. 上傳合併後的資料
+    // 6. 上傳合併後的資料（含刪除清單）
     const putRes=await fetch(FB,{method:'PUT',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({records:mergedRecs,accounts:mergedAccs,rates:mergedRates,profits:mergedProfits,synced:new Date().toISOString()})});
+      body:JSON.stringify({records:mergedRecs,accounts:mergedAccs,rates:mergedRates,profits:mergedProfits,deleted:allDeleted,synced:new Date().toISOString()})});
     if(!putRes.ok){
       const txt=await putRes.text();
       throw new Error(`上傳失敗 ${putRes.status}: ${txt.slice(0,80)}`);
@@ -406,6 +413,9 @@ const saveProfits=d=>localStorage.setItem(PRK,JSON.stringify(d));
 const ARK='ml_ar';
 const getAR=()=>JSON.parse(localStorage.getItem(ARK)||'{}');
 const saveAR=d=>localStorage.setItem(ARK,JSON.stringify(d));
+const DRK='ml_deleted';
+const getDeleted=()=>JSON.parse(localStorage.getItem(DRK)||'[]');
+const saveDeleted=d=>localStorage.setItem(DRK,JSON.stringify(d));
 
 function learn(field,val){
   if(!val||!val.trim())return;
@@ -711,6 +721,10 @@ function renderRecords(){
 function delRec(id){
   if(!confirm('刪除這筆紀錄？'))return;
   saveRecs(getRecs().filter(r=>r.id!==id));
+  // Track deletion so sync won't bring it back
+  const del=getDeleted();
+  if(!del.includes(id))del.push(id);
+  saveDeleted(del);
   renderRecords();
   if(document.getElementById('sec-acc').classList.contains('active'))renderAccounts();
 }
