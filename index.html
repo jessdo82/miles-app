@@ -176,11 +176,17 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
       <div class="fg"><label>日期</label><input type="date" id="s-date"></div>
       <div class="fg"><label>廠商</label><div class="acw"><input type="text" id="s-vendor" placeholder="廠商名稱" autocomplete="off"><div class="acl" id="s-vendor-ac"></div></div></div>
       <div class="fg"><label>航空公司</label><select id="s-airline"><option value="">選擇航空公司</option><option>長榮 EVA</option><option>華航 CI</option><option>國泰 CX</option><option>日航 JL</option><option>法航 AF</option><option>漢莎 LH</option><option>小樹點</option><option>其他</option></select></div>
+      <div class="fg"><label>收款幣別</label>
+        <div class="seg" id="s-curr-seg">
+          <div class="seg-opt active" data-v="RMB" onclick="setSeg('s-curr-seg',this);setSellCurrency('RMB')">人民幣 RMB（預設）</div>
+          <div class="seg-opt" data-v="TWD" onclick="setSeg('s-curr-seg',this);setSellCurrency('TWD')">台幣 TWD</div>
+        </div>
+      </div>
       <div class="row2">
         <div class="fg"><label>哩程數（萬）</label><input type="number" id="s-miles" placeholder="5" inputmode="decimal" step="0.1"></div>
-        <div class="fg"><label>單價（RMB/萬哩）</label><input type="number" id="s-up" placeholder="380" inputmode="decimal"></div>
+        <div class="fg"><label id="s-up-label">單價（RMB/萬哩）</label><input type="number" id="s-up" placeholder="380" inputmode="decimal"></div>
       </div>
-      <div class="fg"><label>總金額（RMB）</label><input type="number" id="s-total" class="calc" placeholder="自動計算，可手動覆蓋" inputmode="decimal"></div>
+      <div class="fg"><label id="s-total-label">總金額（RMB）</label><input type="number" id="s-total" class="calc" placeholder="自動計算，可手動覆蓋" inputmode="decimal"></div>
       <div class="fg">
         <label>付款狀態</label>
         <div class="seg" id="s-pay-seg">
@@ -199,11 +205,21 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
       <div class="fg"><label>日期</label><input type="date" id="b-date"></div>
       <div class="fg"><label>賣家</label><div class="acw"><input type="text" id="b-seller" placeholder="賣家姓名" autocomplete="off"><div class="acl" id="b-seller-ac"></div></div></div>
       <div class="fg"><label>航空公司</label><select id="b-airline"><option value="">選擇航空公司</option><option>長榮 EVA</option><option>華航 CI</option><option>國泰 CX</option><option>日航 JL</option><option>法航 AF</option><option>漢莎 LH</option><option>小樹點</option><option>其他</option></select></div>
+      <div class="fg"><label>付款幣別</label>
+        <div class="seg" id="b-curr-seg">
+          <div class="seg-opt active" data-v="TWD" onclick="setSeg('b-curr-seg',this);setBuyCurrency('TWD')">台幣 TWD（預設）</div>
+          <div class="seg-opt" data-v="RMB" onclick="setSeg('b-curr-seg',this);setBuyCurrency('RMB')">人民幣 RMB</div>
+        </div>
+      </div>
       <div class="row2">
         <div class="fg"><label>哩程數（萬）</label><input type="number" id="b-miles" placeholder="5" inputmode="decimal" step="0.1"></div>
-        <div class="fg"><label>單價（TWD/哩）</label><input type="number" id="b-up" placeholder="0.28" inputmode="decimal" step="0.001"></div>
+        <div class="fg"><label id="b-up-label">單價（TWD/哩）</label><input type="number" id="b-up" placeholder="0.28" inputmode="decimal" step="0.001"></div>
       </div>
-      <div class="fg"><label>總成本（TWD）</label><input type="number" id="b-total" class="calc" placeholder="自動計算，可手動覆蓋" inputmode="decimal"></div>
+      <div class="fg"><label id="b-total-label">總成本（TWD）</label><input type="number" id="b-total" class="calc" placeholder="自動計算，可手動覆蓋" inputmode="decimal"></div>
+      <div id="b-rmb-section" style="display:none">
+        <div class="fg"><label>換算匯率（TWD/CNY）</label><input type="number" id="b-buy-rate" placeholder="4.66" step="0.001" inputmode="decimal"></div>
+        <div class="fg"><label>折算台幣成本（自動計算）</label><input type="number" id="b-twd-cost" class="calc" placeholder="自動計算" readonly></div>
+      </div>
       <div class="fg"><label>手續費（TWD）<span style="font-size:11px;color:#999;font-weight:400"> 選填，計入成本</span></label><input type="number" id="b-fee" placeholder="0" inputmode="decimal"></div>
       <div class="fg"><label>付款帳戶</label><div class="acw"><input type="text" id="b-pay" placeholder="從哪個帳戶付款" autocomplete="off"><div class="acl" id="b-pay-ac"></div></div></div>
       <div class="fg"><label>備註</label><input type="text" id="b-note" placeholder="選填"></div>
@@ -654,6 +670,24 @@ function segVal(segId){
   return a?a.dataset.v:'';
 }
 
+// ─── Currency toggle ───────────────────────────────────────
+function setSellCurrency(cur){
+  const isTWD=cur==='TWD';
+  document.getElementById('s-total-label').textContent=isTWD?'總金額（TWD）':'總金額（RMB）';
+  document.getElementById('s-up-label').textContent=isTWD?'單價（TWD/萬哩）':'單價（RMB/萬哩）';
+  document.getElementById('s-total').value='';
+  document.getElementById('s-up').value='';
+}
+function setBuyCurrency(cur){
+  const isRMB=cur==='RMB';
+  document.getElementById('b-up-label').textContent=isRMB?'單價（RMB/萬哩）':'單價（TWD/哩）';
+  document.getElementById('b-total-label').textContent=isRMB?'總金額（RMB）':'總成本（TWD）';
+  document.getElementById('b-rmb-section').style.display=isRMB?'block':'none';
+  document.getElementById('b-total').value='';
+  document.getElementById('b-up').value='';
+  if(isRMB){document.getElementById('b-buy-rate').value=getEstRate().toFixed(3);document.getElementById('b-twd-cost').value='';}
+}
+
 // ─── Auto calc ─────────────────────────────────────────────
 function setupCalc(){
   const wire=(a,b,out,fn)=>[a,b].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{
@@ -661,7 +695,24 @@ function setupCalc(){
     if(va&&vb)document.getElementById(out).value=fn(va,vb);
   }));
   wire('s-miles','s-up','s-total',(m,r)=>(m*r).toFixed(0));
-  wire('b-miles','b-up','b-total',(m,r)=>(m*10000*r).toFixed(0));
+  // 進貨 auto-calc depends on currency mode
+  ['b-miles','b-up'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{
+    const m=parseFloat(document.getElementById('b-miles')?.value);
+    const u=parseFloat(document.getElementById('b-up')?.value);
+    if(m&&u){
+      const isRMB=segVal('b-curr-seg')==='RMB';
+      document.getElementById('b-total').value=isRMB?(m*u).toFixed(0):(m*10000*u).toFixed(0);
+      if(isRMB){const rr=parseFloat(document.getElementById('b-buy-rate')?.value)||getEstRate();document.getElementById('b-twd-cost').value=(m*u*rr).toFixed(0);}
+    }
+  }));
+  // b-buy-rate → recalc twd cost
+  ['b-total','b-buy-rate'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{
+    if(segVal('b-curr-seg')==='RMB'){
+      const rmb=parseFloat(document.getElementById('b-total')?.value);
+      const rr=parseFloat(document.getElementById('b-buy-rate')?.value)||getEstRate();
+      if(rmb&&rr)document.getElementById('b-twd-cost').value=(rmb*rr).toFixed(0);
+    }
+  }));
   // 換匯 bidirectional: RMB+TWD→rate, RMB+rate→TWD
   ['x-rmb','x-twd','x-rate'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{
     const rmb=parseFloat(document.getElementById('x-rmb')?.value);
@@ -685,25 +736,42 @@ function submit(type){
     if(!v('s-vendor')){toast('請填寫廠商');return;}
     const payStatus=segVal('s-pay-seg')||'unpaid';
     const payDest=payStatus==='paid'?v('s-pay-dest'):'';
+    const sCurr=segVal('s-curr-seg')||'RMB';
     Object.assign(rec,{date:v('s-date')||today(),vendor:v('s-vendor'),airline:v('s-airline'),miles:v('s-miles'),unitprice:v('s-up'),total:v('s-total'),note:v('s-note'),payment_status:payStatus,paid_to:payDest,ar_added:true});
+    if(sCurr==='TWD')rec.sell_currency='TWD';
     learn('vendor',rec.vendor);
     if(payDest)learn('payment',payDest);
     if(payStatus==='unpaid'){
-      const ar=getAR();if(!ar[rec.vendor])ar[rec.vendor]={owed:0};ar[rec.vendor].owed=(ar[rec.vendor].owed||0)+(parseFloat(rec.total)||0);saveAR(ar);
+      const ar=getAR();if(!ar[rec.vendor])ar[rec.vendor]={owed:0};
+      // AR is always tracked in RMB; TWD sales don't go into AR
+      if(sCurr!=='TWD')ar[rec.vendor].owed=(ar[rec.vendor].owed||0)+(parseFloat(rec.total)||0);
+      saveAR(ar);
     }
     clear('s-vendor','s-miles','s-up','s-total','s-note','s-pay-dest');
     document.getElementById('s-airline').value='';
     setSeg('s-pay-seg',document.querySelector('#s-pay-seg .seg-opt'));
+    setSeg('s-curr-seg',document.querySelector('#s-curr-seg .seg-opt'));
+    setSellCurrency('RMB');
     document.getElementById('s-pay-dest-wrap').style.display='none';
   }else if(type==='進貨'){
     if(!v('b-total')&&(!v('b-miles')||!v('b-up'))){toast('請填寫金額');return;}
+    const bCurr=segVal('b-curr-seg')||'TWD';
     const bInvEl=document.getElementById('b-inventory');
-    Object.assign(rec,{date:v('b-date')||today(),seller:v('b-seller'),airline:v('b-airline'),miles:v('b-miles'),unitprice:v('b-up'),total:v('b-total'),fee:v('b-fee'),payment:v('b-pay'),note:v('b-note'),is_inventory:bInvEl&&bInvEl.checked?true:undefined});
+    let buyCurrExtra={};
+    if(bCurr==='RMB'){
+      const buyRmb=parseFloat(v('b-total'))||0;
+      const buyRate=parseFloat(v('b-buy-rate'))||getEstRate();
+      const twdCost=String(Math.round(buyRmb*buyRate));
+      buyCurrExtra={buy_currency:'RMB',buy_rmb:String(buyRmb),buy_rate:String(buyRate),total:twdCost};
+    }
+    Object.assign(rec,{date:v('b-date')||today(),seller:v('b-seller'),airline:v('b-airline'),miles:v('b-miles'),unitprice:v('b-up'),total:v('b-total'),fee:v('b-fee'),payment:v('b-pay'),note:v('b-note'),is_inventory:bInvEl&&bInvEl.checked?true:undefined,...buyCurrExtra});
     if(!rec.is_inventory)delete rec.is_inventory;
     learn('seller',rec.seller);learn('payment',rec.payment);
-    clear('b-seller','b-miles','b-up','b-total','b-fee','b-pay','b-note');
+    clear('b-seller','b-miles','b-up','b-total','b-fee','b-pay','b-note','b-buy-rate','b-twd-cost');
     if(bInvEl)bInvEl.checked=false;
     document.getElementById('b-airline').value='';
+    setSeg('b-curr-seg',document.querySelector('#b-curr-seg .seg-opt'));
+    setBuyCurrency('TWD');
   }else if(type==='換匯'){
     if(!v('x-ch')){toast('請填寫換匯管道');return;}
     const fromVendor=document.getElementById('x-from')?.value||'';
@@ -746,7 +814,8 @@ function getBalance(accName){
   let delta=0;
   if(isCNY){
     recs.forEach(r=>{
-      if(r.type==='出貨'&&r.payment_status==='paid'&&r.paid_to===accName) delta+=parseFloat(r.total)||0;
+      // Only RMB-denominated 出貨 goes into CNY accounts
+      if(r.type==='出貨'&&r.payment_status==='paid'&&r.paid_to===accName&&r.sell_currency!=='TWD') delta+=parseFloat(r.total)||0;
       if(r.type==='換匯'&&r.from_account===accName) delta-=parseFloat(r.rmb)||0;
     });
     // AR settlements: vendor paid later and money went to this account
@@ -761,6 +830,8 @@ function getBalance(accName){
         if(r.dir==='收入') delta+=parseFloat(r.amount)||0;
         else delta-=parseFloat(r.amount)||0;
       }
+      // TWD-denominated 出貨 paid into a TWD account
+      if(r.type==='出貨'&&r.payment_status==='paid'&&r.paid_to===accName&&r.sell_currency==='TWD') delta+=parseFloat(r.total)||0;
     });
   }
   return start+delta;
@@ -987,14 +1058,22 @@ function renderRecords(){
     let main='',sub='',amt='';
     if(r.type==='出貨'){
       main=esc([r.vendor,r.airline].filter(Boolean).join(' · '));
-      sub=[r.miles&&r.miles+'萬哩',r.unitprice&&'@'+r.unitprice+'/萬'].filter(Boolean).join(' ');
+      const isTWDSell=r.sell_currency==='TWD';
+      sub=[r.miles&&r.miles+'萬哩',r.unitprice&&'@'+r.unitprice+(isTWDSell?'/萬(TWD)':'/萬'),isTWDSell?'🟢 TWD收款':null].filter(Boolean).join(' ');
       if(r.profit_twd!==undefined&&r.profit_twd!==''&&r.profit_twd!==null){
         amt=`<span class="blue">NT$ ${fmt(parseFloat(r.twd)||0)}</span><br><span class="green" style="font-size:11px">淨 ${fmt(parseFloat(r.profit_twd))}</span>`;
       }else{
-        amt=r.total?`<span class="blue">+¥${r.total}</span>`:'';
+        amt=r.total?`<span class="blue">${isTWDSell?'+NT$':'+¥'}${r.total}</span>`:'';
       }
     }
-    else if(r.type==='進貨'){main=esc([r.seller,r.airline].filter(Boolean).join(' · '));sub=[r.miles&&r.miles+'萬哩',r.unitprice&&'@'+r.unitprice+'/哩',r.payment||r.card,r.is_inventory?'📦 庫存':null].filter(Boolean).join(' · ');const bTotal=(parseFloat(r.total)||0)+(parseFloat(r.fee)||0);amt=bTotal?`<span class="red">-NT$${bTotal}</span>`:'';}
+    else if(r.type==='進貨'){
+      main=esc([r.seller,r.airline].filter(Boolean).join(' · '));
+      const isRMBBuy=r.buy_currency==='RMB';
+      const upStr=r.unitprice?'@'+r.unitprice+(isRMBBuy?'/萬(RMB)':'/哩'):null;
+      sub=[r.miles&&r.miles+'萬哩',upStr,r.payment||r.card,isRMBBuy?`×${r.buy_rate||'?'}匯率`:null,r.is_inventory?'📦 庫存':null].filter(Boolean).join(' · ');
+      const bTotal=(parseFloat(r.total)||0)+(parseFloat(r.fee)||0);
+      amt=bTotal?`<span class="red">-NT$${bTotal}</span>`:'';
+    }
     else if(r.type==='換匯'){main=esc(r.channel||'');sub=[r.rate&&'匯率'+r.rate,r.account,r.from_vendor&&'來自 '+r.from_vendor].filter(Boolean).join(' · ');amt=(r.rmb||r.twd)?`<span class="orange">¥${r.rmb}→$${r.twd}</span>`:'';}
     else if(r.type==='稅金'){main=esc(r.vendor||'');sub=[r.card,r.note].filter(Boolean).join(' · ');amt=[r.twd&&`<span class="red">-NT$${r.twd}</span>`,r.rmb&&`<span class="blue">+¥${r.rmb}</span>`].filter(Boolean).join('<br>');}
     else if(r.type==='其他'){main=esc(r.account||'');sub=esc(r.desc||'');const sign=r.dir==='收入'?'+':'-';const cls=r.dir==='收入'?'green':'red';amt=r.amount?`<span class="${cls}">${sign}NT$${r.amount}</span>`:'';}
@@ -1035,24 +1114,28 @@ function getMonthNet(ym,recs,profits,storedRates,defRate){
   const withoutP=sells.filter(r=>!hasPT(r));
   const directP=withP.reduce((s,r)=>s+(parseFloat(r.profit_twd)||0),0);
   const cost=buys.reduce((s,r)=>s+(parseFloat(r.total)||0)+(parseFloat(r.fee)||0),0);
+  // Separate TWD-denominated and RMB-denominated 出貨
+  const sellRMB=withoutP.filter(r=>r.sell_currency!=='TWD');
+  const sellTWD=withoutP.filter(r=>r.sell_currency==='TWD');
+  const totalSellTWDDirect=sellTWD.reduce((s,r)=>s+(parseFloat(r.total)||0),0);
+  const totalSellRMB=sellRMB.reduce((s,r)=>s+(parseFloat(r.total)||0),0);
   if(storedRates[ym]!==undefined){
     const mrate=storedRates[ym];
-    const calcRev=withoutP.reduce((s,r)=>s+(r.twd?parseFloat(r.twd):(parseFloat(r.total)||0)*mrate),0);
+    const calcRev=totalSellTWDDirect+sellRMB.reduce((s,r)=>s+(r.twd?parseFloat(r.twd):(parseFloat(r.total)||0)*mrate),0);
     return withP.length>0&&withoutP.length===0?directP:directP+calcRev-cost;
   }
   // Split rate: exchanged portion uses actual TWD received; unexchanged uses defRate estimate
   const ex=recs.filter(r=>r.type==='換匯'&&r.date?.startsWith(ym)&&r.rmb&&r.twd);
   const totalExRMB=ex.reduce((s,r)=>s+(parseFloat(r.rmb)||0),0);
   const totalExTWD=ex.reduce((s,r)=>s+(parseFloat(r.twd)||0),0);
-  const totalSellRMB=withoutP.reduce((s,r)=>s+(parseFloat(r.total)||0),0);
   let calcRev;
   if(totalExRMB===0){
-    calcRev=totalSellRMB*defRate;
+    calcRev=totalSellTWDDirect+totalSellRMB*defRate;
   }else if(totalExRMB>=totalSellRMB){
-    calcRev=totalSellRMB*(totalExTWD/totalExRMB);
+    calcRev=totalSellTWDDirect+totalSellRMB*(totalExTWD/totalExRMB);
   }else{
     // Partial: actual TWD received + remaining at estimated rate
-    calcRev=totalExTWD+(totalSellRMB-totalExRMB)*defRate;
+    calcRev=totalSellTWDDirect+totalExTWD+(totalSellRMB-totalExRMB)*defRate;
   }
   return withP.length>0&&withoutP.length===0?directP:directP+calcRev-cost;
 }
@@ -1153,7 +1236,7 @@ function showRecordDetail(id){
     }else if(rec.total&&related.length>0){
       const buys=related.filter(r=>r.type==='進貨'&&!r.is_inventory);
       if(buys.length>0){
-        const rev=parseFloat(rec.total)*mrate;
+        const rev=rec.sell_currency==='TWD'?parseFloat(rec.total):parseFloat(rec.total)*mrate;
         if(!isBatch){
           const cost=buys.reduce((s,r)=>s+(parseFloat(r.total)||0)+(parseFloat(r.fee)||0),0);
           dealProfit=rev-cost;
@@ -1179,7 +1262,7 @@ function showRecordDetail(id){
         dealProfit=parseFloat(sell.profit_twd);
         profitNote='來自出貨實際記錄';
       }else{
-        const totalRev=allSells.reduce((s,r)=>s+(parseFloat(r.total)||0)*mrate,0);
+        const totalRev=allSells.reduce((s,r)=>r.sell_currency==='TWD'?s+(parseFloat(r.total)||0):s+(parseFloat(r.total)||0)*mrate,0);
         const totalCost=allBuys.reduce((s,r)=>s+(parseFloat(r.total)||0)+(parseFloat(r.fee)||0),0);
         dealProfit=totalRev-totalCost;
         profitNote=isBatch?`批次總利潤（${allSells.length} 筆出貨）`:`¥${sell.total} × ${mrate} − NT$${fmt(totalCost)}`;
@@ -1193,8 +1276,8 @@ function showRecordDetail(id){
     :rec.vendor||rec.channel||rec.account||'';
   const subLine=[rec.miles&&rec.miles+'萬哩',rec.unitprice&&'@'+rec.unitprice].filter(Boolean).join(' ');
   const amtLine=rec.type==='出貨'
-    ?(hasPT(rec)?`<span class="blue">NT$ ${fmt(parseFloat(rec.twd)||0)}</span>`:(rec.total?`<span class="blue">+¥${rec.total}</span>`:''))
-    :rec.type==='進貨'?(rec.total?`<span class="red">-NT$${rec.total}</span>`:''):'';
+    ?(hasPT(rec)?`<span class="blue">NT$ ${fmt(parseFloat(rec.twd)||0)}</span>`:(rec.total?`<span class="blue">${rec.sell_currency==='TWD'?'+NT$':'+¥'}${rec.total}</span>`:''))
+    :rec.type==='進貨'?(rec.total?`<span class="red">-NT$ ${fmt((parseFloat(rec.total)||0)+(parseFloat(rec.fee)||0))}</span>${rec.buy_currency==='RMB'?`<br><span style="font-size:11px;color:var(--txt3)">¥${rec.buy_rmb||rec.total} × ${rec.buy_rate||'?'}</span>`:''}`:''):'';
 
   // Related records (max 5, with overflow count)
   let relatedHTML='';
@@ -1458,28 +1541,32 @@ function renderSummary(){
     const hasPT=r=>r.profit_twd!==undefined&&r.profit_twd!==''&&r.profit_twd!==null;
     const withoutProfit=recsSell.filter(r=>!hasPT(r));
     const hasStoredRate=storedRates[ym]!==undefined;
-    // Split rate breakdown
+    // Separate TWD and RMB sales
+    const sellRMBRecs=withoutProfit.filter(r=>r.sell_currency!=='TWD');
+    const sellTWDRecs=withoutProfit.filter(r=>r.sell_currency==='TWD');
+    const totalSellTWDDirect=sellTWDRecs.reduce((s,r)=>s+(parseFloat(r.total)||0),0);
+    // Split rate breakdown (only for RMB portion)
     const exRecs=recs.filter(r=>r.type==='換匯'&&r.date?.startsWith(ym)&&r.rmb&&r.twd);
     const totalExRMB=exRecs.reduce((s,r)=>s+(parseFloat(r.rmb)||0),0);
     const totalExTWD=exRecs.reduce((s,r)=>s+(parseFloat(r.twd)||0),0);
     const actualRate=totalExRMB>0?totalExTWD/totalExRMB:0;
-    const totalSellRMB=withoutProfit.reduce((s,r)=>s+(parseFloat(r.total)||0),0);
+    const totalSellRMB=sellRMBRecs.reduce((s,r)=>s+(parseFloat(r.total)||0),0);
     const pendRMB=Math.max(0,totalSellRMB-totalExRMB);
     const isSplit=!hasStoredRate&&totalExRMB>0&&pendRMB>0;
     const mrate=hasStoredRate?storedRates[ym]:(totalExRMB>0?actualRate:rate);
     let rateDisplay,calcRevTwd;
     if(hasStoredRate){
       rateDisplay=`手動 ${storedRates[ym].toFixed(4)}`;
-      calcRevTwd=withoutProfit.reduce((s,r)=>s+(parseFloat(r.total)||0)*storedRates[ym],0);
+      calcRevTwd=totalSellTWDDirect+sellRMBRecs.reduce((s,r)=>s+(parseFloat(r.total)||0)*storedRates[ym],0);
     }else if(isSplit){
       rateDisplay=`已換 @${actualRate.toFixed(4)} + 待換 @${rate}（估）`;
-      calcRevTwd=totalExTWD+pendRMB*rate;
+      calcRevTwd=totalSellTWDDirect+totalExTWD+pendRMB*rate;
     }else if(totalExRMB>0){
       rateDisplay=`實際均值 ${actualRate.toFixed(4)}`;
-      calcRevTwd=totalSellRMB*actualRate;
+      calcRevTwd=totalSellTWDDirect+totalSellRMB*actualRate;
     }else{
       rateDisplay=`估算 ${rate}`;
-      calcRevTwd=totalSellRMB*rate;
+      calcRevTwd=totalSellTWDDirect+totalSellRMB*rate;
     }
     const cost=recsBuy.filter(r=>!r.is_inventory).reduce((s,r)=>s+(parseFloat(r.total)||0)+(parseFloat(r.fee)||0),0);
     const invBuyCount=recsBuy.filter(r=>r.is_inventory).length;
@@ -1496,7 +1583,7 @@ function renderSummary(){
           `<input type="number" placeholder="${rate}" step="0.01" inputmode="decimal" style="width:80px;padding:6px 10px;font-size:14px;font-weight:600;border-radius:8px;text-align:right;background:#f9f9f9;color:var(--txt3)" title="手動鎖定匯率（覆蓋估算）" onchange="setMonthRate('${ym}',this.value)" onclick="event.stopPropagation()">`}
         </div>
         ${splitDetail}
-        <div class="sc-r"><span>出貨收入</span><span class="sc-v blue">NT$ ${fmt(calcRevTwd)}</span></div>
+        <div class="sc-r"><span>出貨收入${sellTWDRecs.length>0?`<span style="font-size:10px;color:var(--blue);margin-left:4px">（含 ${sellTWDRecs.length} 筆 TWD）</span>`:''}</span><span class="sc-v blue">NT$ ${fmt(calcRevTwd)}</span></div>
         <div class="sc-r"><span>進貨成本${invBuyCount>0?`<span style="font-size:10px;color:var(--orange);margin-left:4px">（庫存 ${invBuyCount} 筆不計）</span>`:''}</span><span class="sc-v red">-NT$ ${fmt(cost)}</span></div>
         ${taxLine}
         <div class="sc-r"><span style="font-weight:600;color:var(--txt)">淨利</span><span class="sc-v ${cls}" style="font-size:15px">NT$ ${fmt(net)}</span></div>
@@ -1629,7 +1716,7 @@ function renderAccTx(accName,isCNY){
   const tx=[];
   if(isCNY){
     recs.forEach(r=>{
-      if(r.type==='出貨'&&r.payment_status==='paid'&&r.paid_to===accName)
+      if(r.type==='出貨'&&r.payment_status==='paid'&&r.paid_to===accName&&r.sell_currency!=='TWD')
         tx.push({date:r.date,desc:`出貨收款 ${r.vendor||''}`,amt:parseFloat(r.total)||0,sign:1});
       if(r.type==='換匯'&&r.from_account===accName)
         tx.push({date:r.date,desc:`換匯出 → ${r.account||''}`,amt:parseFloat(r.rmb)||0,sign:-1});
@@ -1638,10 +1725,11 @@ function renderAccTx(accName,isCNY){
     Object.entries(ar).forEach(([v,e])=>{if(e.settled_to===accName&&e.settled_amount&&e.settled_at)tx.push({date:e.settled_at,desc:`${v} AR結清`,amt:parseFloat(e.settled_amount)||0,sign:1});});
   }else{
     recs.forEach(r=>{
-      if(r.type==='進貨'&&r.payment===accName)tx.push({date:r.date,desc:`進貨 ${r.seller||''}`,amt:(parseFloat(r.total)||0)+(parseFloat(r.fee)||0),sign:-1});
+      if(r.type==='進貨'&&r.payment===accName)tx.push({date:r.date,desc:`進貨 ${r.seller||''}${r.buy_currency==='RMB'?' (RMB購入)':''}`,amt:(parseFloat(r.total)||0)+(parseFloat(r.fee)||0),sign:-1});
       if(r.type==='換匯'&&r.account===accName)tx.push({date:r.date,desc:`換匯入 ${r.channel||''}`,amt:parseFloat(r.twd)||0,sign:1});
       if(r.type==='稅金'&&r.card===accName)tx.push({date:r.date,desc:`稅金 ${r.vendor||''}`,amt:parseFloat(r.twd)||0,sign:-1});
       if(r.type==='其他'&&r.account===accName)tx.push({date:r.date,desc:r.desc||'其他',amt:parseFloat(r.amount)||0,sign:r.dir==='收入'?1:-1});
+      if(r.type==='出貨'&&r.payment_status==='paid'&&r.paid_to===accName&&r.sell_currency==='TWD')tx.push({date:r.date,desc:`出貨收款 ${r.vendor||''} (TWD)`,amt:parseFloat(r.total)||0,sign:1});
     });
   }
   tx.sort((a,b)=>b.date.localeCompare(a.date));
