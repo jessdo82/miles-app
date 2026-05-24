@@ -765,10 +765,37 @@ function renderAccounts(){
   const invTotalCost=invRecs.reduce((s,r)=>s+(parseFloat(r.total)||0)+(parseFloat(r.fee)||0),0);
   const invTotalMiles=invRecs.reduce((s,r)=>s+(parseFloat(r.miles)||0),0);
 
-  let html=`<div class="acc-total"><div class="acc-total-label">台幣總資產</div><div class="acc-total-val">NT$ ${fmt(totalTWD)}</div>`;
-  if(cnyAccs.length)html+=`<div style="margin-top:6px"><div class="acc-total-label">人民幣帳戶</div><div style="font-size:20px;font-weight:700;color:#c96500">¥ ${fmt(totalCNY)}</div></div>`;
-  if(invTotalMiles>0)html+=`<div style="margin-top:6px"><div class="acc-total-label">哩程庫存成本</div><div style="font-size:20px;font-weight:700;color:var(--orange)">NT$ ${fmt(invTotalCost)} · ${invTotalMiles}萬哩</div></div>`;
-  html+=`</div>`;
+  const rate=getEstRate();
+  const ar=getAR();
+  const arOwed=Object.values(ar).reduce((s,v)=>s+Math.max(0,v.owed||0),0);
+  const cnyAsTwd=totalCNY*rate;
+  const arAsTwd=arOwed*rate;
+  const grandTotal=totalTWD+cnyAsTwd+arAsTwd+invTotalCost;
+
+  const row=(label,val,note,color)=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.1)">
+      <div><div style="font-size:13px;color:rgba(255,255,255,.65)">${label}</div>${note?`<div style="font-size:11px;color:rgba(255,255,255,.38);margin-top:1px">${note}</div>`:''}</div>
+      <div style="font-size:16px;font-weight:700;color:${color||'#fff'}">NT$ ${fmt(val)}</div>
+    </div>`;
+
+  let html=`<div style="background:linear-gradient(145deg,#1e3a5f,#0f2540);border-radius:22px;padding:20px;margin-bottom:16px;box-shadow:0 6px 24px rgba(15,37,64,.35)">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:rgba(255,255,255,.4);margin-bottom:14px">全資產概覽</div>
+    ${row('台幣帳戶',totalTWD,'','#7dd3fc')}
+    ${cnyAccs.length?row('人民幣帳戶（折台幣）',cnyAsTwd,`¥ ${fmt(totalCNY)} × ${rate}`,'#fcd34d'):''}
+    ${arOwed>0?row('待收款項（折台幣）',arAsTwd,`應收 ¥ ${fmt(arOwed)} × ${rate}`,'#6ee7b7'):''}
+    ${invTotalMiles>0?row('哩程庫存成本',invTotalCost,`${invTotalMiles} 萬哩 · ${invRecs.length} 筆`,'#c4b5fd'):''}
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.18);display:flex;justify-content:space-between;align-items:baseline">
+      <span style="font-size:12px;color:rgba(255,255,255,.45)">估計總資產</span>
+      <span style="font-size:30px;font-weight:900;letter-spacing:-.5px;color:#fff">NT$ ${fmt(grandTotal)}</span>
+    </div>
+    <div style="margin-top:12px;display:flex;align-items:center;gap:8px">
+      <span style="font-size:11px;color:rgba(255,255,255,.4);white-space:nowrap">折算匯率</span>
+      <input type="number" value="${rate}" step="0.001" inputmode="decimal"
+        style="width:72px;padding:7px 10px;font-size:14px;font-weight:700;border:1.5px solid rgba(255,255,255,.2);border-radius:9px;background:rgba(255,255,255,.08);color:#fff;text-align:center;outline:none"
+        oninput="saveEstRate(this.value);renderAccounts()">
+      <span style="font-size:11px;color:rgba(255,255,255,.4)">TWD/CNY</span>
+    </div>
+  </div>`;
 
   typeOrder.forEach(t=>{
     const list=grouped[t];
