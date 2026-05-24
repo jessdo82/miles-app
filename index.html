@@ -18,12 +18,19 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'PingFang TC',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
 
-.hd{background:rgba(255,255,255,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:16px 20px 0;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
-.hd h1{font-size:22px;font-weight:800;padding-bottom:12px;letter-spacing:-.4px}
-.tabs{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.hd{background:rgba(255,255,255,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:16px 20px 0;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.05)}
+.hd h1{font-size:22px;font-weight:800;padding-bottom:10px;letter-spacing:-.4px}
+.tabs{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:4px;padding-bottom:10px}
 .tabs::-webkit-scrollbar{display:none}
-.tab{flex-shrink:0;padding:10px 16px;font-size:14px;font-weight:500;color:var(--txt2);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:color .15s}
-.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab{flex-shrink:0;padding:7px 15px;font-size:13px;font-weight:600;color:var(--txt2);border-radius:22px;cursor:pointer;white-space:nowrap;transition:all .18s;border:1.5px solid transparent}
+.tab:not(.active):hover{background:#f2f2f7}
+.tab.active{color:#fff;border-color:transparent}
+#atabs .tab[data-f="出貨"].active{background:var(--blue);box-shadow:0 3px 10px rgba(0,122,255,.3)}
+#atabs .tab[data-f="進貨"].active{background:var(--green);box-shadow:0 3px 10px rgba(52,199,89,.3)}
+#atabs .tab[data-f="換匯"].active{background:var(--orange);box-shadow:0 3px 10px rgba(255,149,0,.3)}
+#atabs .tab[data-f="稅金"].active{background:var(--red);box-shadow:0 3px 10px rgba(255,59,48,.3)}
+#atabs .tab[data-f="其他"].active{background:var(--purple);box-shadow:0 3px 10px rgba(175,82,222,.3)}
+#ftabs .tab.active{background:var(--blue);box-shadow:0 2px 8px rgba(0,122,255,.25)}
 
 .ct{padding:16px 16px 100px;max-width:520px;margin:0 auto}
 
@@ -772,28 +779,34 @@ function renderAccounts(){
   const arAsTwd=arOwed*rate;
   const grandTotal=totalTWD+cnyAsTwd+arAsTwd+invTotalCost;
 
-  const row=(label,val,note,color)=>`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.1)">
-      <div><div style="font-size:13px;color:rgba(255,255,255,.65)">${label}</div>${note?`<div style="font-size:11px;color:rgba(255,255,255,.38);margin-top:1px">${note}</div>`:''}</div>
-      <div style="font-size:16px;font-weight:700;color:${color||'#fff'}">NT$ ${fmt(val)}</div>
+  const assetRow=(dot,label,sub,val)=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #f5f5f7">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:4px;height:34px;border-radius:3px;background:${dot};flex-shrink:0"></div>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--txt)">${label}</div>
+          ${sub?`<div style="font-size:11px;color:var(--txt3);margin-top:1px">${sub}</div>`:''}
+        </div>
+      </div>
+      <div style="font-size:16px;font-weight:800;color:var(--txt);text-align:right">NT$ ${fmt(val)}</div>
     </div>`;
 
-  let html=`<div style="background:linear-gradient(145deg,#1e3a5f,#0f2540);border-radius:22px;padding:20px;margin-bottom:16px;box-shadow:0 6px 24px rgba(15,37,64,.35)">
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:rgba(255,255,255,.4);margin-bottom:14px">全資產概覽</div>
-    ${row('台幣帳戶',totalTWD,'','#7dd3fc')}
-    ${cnyAccs.length?row('人民幣帳戶（折台幣）',cnyAsTwd,`¥ ${fmt(totalCNY)} × ${rate}`,'#fcd34d'):''}
-    ${arOwed>0?row('待收款項（折台幣）',arAsTwd,`應收 ¥ ${fmt(arOwed)} × ${rate}`,'#6ee7b7'):''}
-    ${invTotalMiles>0?row('哩程庫存成本',invTotalCost,`${invTotalMiles} 萬哩 · ${invRecs.length} 筆`,'#c4b5fd'):''}
-    <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.18);display:flex;justify-content:space-between;align-items:baseline">
-      <span style="font-size:12px;color:rgba(255,255,255,.45)">估計總資產</span>
-      <span style="font-size:30px;font-weight:900;letter-spacing:-.5px;color:#fff">NT$ ${fmt(grandTotal)}</span>
+  let html=`<div style="background:#fff;border-radius:22px;padding:20px;margin-bottom:16px;box-shadow:0 3px 16px rgba(0,0,0,.09)">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--txt3)">全資產概覽</div>
+      <div style="font-size:26px;font-weight:900;letter-spacing:-.5px;color:var(--txt)">NT$ ${fmt(grandTotal)}</div>
     </div>
-    <div style="margin-top:12px;display:flex;align-items:center;gap:8px">
-      <span style="font-size:11px;color:rgba(255,255,255,.4);white-space:nowrap">折算匯率</span>
+    <div style="font-size:11px;color:var(--txt3);text-align:right;margin-bottom:14px;border-bottom:1.5px solid #f2f2f7;padding-bottom:14px">四項合計估算</div>
+    ${assetRow('var(--blue)','台幣帳戶','銀行・電子支付・現金',totalTWD)}
+    ${cnyAccs.length?assetRow('var(--orange)','人民幣帳戶（折台幣）',`¥ ${fmt(totalCNY)} × ${rate}`,cnyAsTwd):''}
+    ${arOwed>0?assetRow('var(--green)','待收款項（折台幣）',`應收 ¥ ${fmt(arOwed)} × ${rate}`,arAsTwd):''}
+    ${invTotalMiles>0?assetRow('var(--purple)','哩程庫存成本',`${invTotalMiles} 萬哩 · ${invRecs.length} 筆`,invTotalCost):''}
+    <div style="margin-top:14px;display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px;color:var(--txt3);white-space:nowrap">CNY 折算匯率</span>
       <input type="number" value="${rate}" step="0.001" inputmode="decimal"
-        style="width:72px;padding:7px 10px;font-size:14px;font-weight:700;border:1.5px solid rgba(255,255,255,.2);border-radius:9px;background:rgba(255,255,255,.08);color:#fff;text-align:center;outline:none"
+        style="width:72px;padding:7px 10px;font-size:14px;font-weight:700;border:1.5px solid #e5e5ea;border-radius:9px;background:#f9f9f9;color:var(--txt);text-align:center"
         oninput="saveEstRate(this.value);renderAccounts()">
-      <span style="font-size:11px;color:rgba(255,255,255,.4)">TWD/CNY</span>
+      <span style="font-size:12px;color:var(--txt3)">TWD/CNY</span>
     </div>
   </div>`;
 
