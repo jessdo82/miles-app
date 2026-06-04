@@ -356,7 +356,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
     <div class="modal-title" id="modal-acc-title">新增帳戶</div>
     <div class="fg"><label>帳戶名稱</label><div class="acw"><input type="text" id="ma-name" placeholder="例：玉山A" autocomplete="off"><div class="acl" id="ma-name-ac"></div></div></div>
     <div class="fg"><label>類型</label>
-      <select id="ma-type" onchange="document.getElementById('ma-bal-label').textContent=this.value==='人民幣帳戶'?'目前餘額（CNY）':'目前餘額（TWD）'">
+      <select id="ma-type">
         <option value="銀行">銀行帳戶</option>
         <option value="電子支付">電子支付</option>
         <option value="現金（自己）">現金（我這裡）</option>
@@ -370,7 +370,6 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
         <option value="其他">其他</option>
       </select>
     </div>
-    <div class="fg"><label id="ma-bal-label">目前餘額（TWD）</label><input type="number" id="ma-bal" placeholder="從 Moze 輸入目前金額" inputmode="decimal"></div>
     <div style="display:flex;gap:10px;margin-top:8px">
       <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeAccModal()">取消</button>
       <button class="btn btn-sm" style="flex:1" onclick="saveAccount()">儲存</button>
@@ -956,8 +955,6 @@ function openAccModal(id){
     document.getElementById('modal-acc-title').textContent='編輯帳戶';
     document.getElementById('ma-name').value=acc.name;
     document.getElementById('ma-type').value=acc.type||'銀行';
-    document.getElementById('ma-bal-label').textContent=acc.type==='人民幣帳戶'?'目前餘額（CNY）':'目前餘額（TWD）';
-    document.getElementById('ma-bal').value=acc.startBalance||'';
     delWrap.style.display='block';
     // Show account transactions
     const txWrap=document.getElementById('ma-tx-wrap');
@@ -966,8 +963,6 @@ function openAccModal(id){
     document.getElementById('modal-acc-title').textContent='新增帳戶';
     document.getElementById('ma-name').value='';
     document.getElementById('ma-type').value='銀行';
-    document.getElementById('ma-bal').value='';
-    document.getElementById('ma-bal-label').textContent='目前餘額（TWD）';
     delWrap.style.display='none';
     const txWrap=document.getElementById('ma-tx-wrap');
     if(txWrap)txWrap.innerHTML='';
@@ -979,7 +974,8 @@ function saveAccount(){
   const name=document.getElementById('ma-name').value.trim();
   if(!name){toast('請填帳戶名稱');return;}
   const type=document.getElementById('ma-type').value;
-  const startBalance=parseFloat(document.getElementById('ma-bal').value)||0;
+  const existingAcc=editAccId?getAccounts().find(a=>a.id===editAccId):null;
+  const startBalance=existingAcc?parseFloat(existingAcc.startBalance)||0:0;
   const accounts=getAccounts();
   if(editAccId){
     const idx=accounts.findIndex(a=>a.id===editAccId);
