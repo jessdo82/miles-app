@@ -169,7 +169,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
     <div class="tabs" id="atabs">
       <div class="tab active" data-f="出貨">出貨</div>
       <div class="tab" data-f="進貨">進貨</div>
-      <div class="tab" data-f="換匯">換匯</div>
+      <div class="tab" data-f="換匯">結款</div>
       <div class="tab" data-f="稅金">代付稅金</div>
       <div class="tab" data-f="其他">其他</div>
       <div class="tab" data-f="理賠">理賠</div>
@@ -234,10 +234,10 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
       </div>
       <button class="btn" onclick="submit('進貨')">儲存進貨</button>
     </div>
-    <!-- 換匯 -->
+    <!-- 結款 -->
     <div id="form-換匯" style="display:none">
       <div class="fg"><label>日期</label><input type="date" id="x-date"></div>
-      <div class="fg"><label>換匯管道</label><div class="acw"><input type="text" id="x-ch" placeholder="換匯管道" autocomplete="off"><div class="acl" id="x-ch-ac"></div></div></div>
+      <div class="fg"><label>結款管道</label><div class="acw"><input type="text" id="x-ch" placeholder="換匯管道" autocomplete="off"><div class="acl" id="x-ch-ac"></div></div></div>
       <div class="row2">
         <div class="fg"><label>人民幣（CNY）</label><input type="number" id="x-rmb" placeholder="CNY" inputmode="decimal"></div>
         <div class="fg"><label>台幣（TWD）</label><input type="number" id="x-twd" placeholder="TWD" inputmode="decimal"></div>
@@ -253,7 +253,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
         <div id="x-from-hint" style="font-size:11px;color:#888;margin-top:4px"></div>
       </div>
       <div class="fg"><label>備註</label><input type="text" id="x-note" placeholder="選填"></div>
-      <button class="btn" onclick="submit('換匯')">儲存換匯</button>
+      <button class="btn" onclick="submit('換匯')">儲存結款</button>
     </div>
     <!-- 稅金 -->
     <div id="form-稅金" style="display:none">
@@ -321,7 +321,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
       <div class="tab active" data-f2="全部">全部</div>
       <div class="tab" data-f2="出貨">出貨</div>
       <div class="tab" data-f2="進貨">進貨</div>
-      <div class="tab" data-f2="換匯">換匯</div>
+      <div class="tab" data-f2="換匯">結款</div>
       <div class="tab" data-f2="稅金">稅金</div>
       <div class="tab" data-f2="其他">其他</div>
       <div class="tab" data-f2="理賠">理賠</div>
@@ -421,20 +421,20 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
     <div class="modal-handle"></div>
     <div class="modal-title" id="modal-ar-settle-title">結清應收帳款</div>
     <div class="seg" id="settle-type-seg" style="margin-bottom:16px">
-      <div class="seg-opt active" data-v="exchange" onclick="setSeg('settle-type-seg',this);showSettleFlow('exchange')">換匯結清</div>
+      <div class="seg-opt active" data-v="exchange" onclick="setSeg('settle-type-seg',this);showSettleFlow('exchange')">結款結清</div>
       <div class="seg-opt" data-v="account" onclick="setSeg('settle-type-seg',this);showSettleFlow('account')">收到帳戶（稍後換）</div>
     </div>
     <div id="settle-flow-exchange">
-      <div class="fg"><label>換匯金額（CNY）</label><input type="number" id="settle-rmb" inputmode="decimal" oninput="const r=parseFloat(document.getElementById('settle-rate').value);if(r&&this.value)document.getElementById('settle-twd').value=(parseFloat(this.value)*r).toFixed(0)"></div>
+      <div class="fg"><label>結款金額（CNY）</label><input type="number" id="settle-rmb" inputmode="decimal" oninput="const r=parseFloat(document.getElementById('settle-rate').value);if(r&&this.value)document.getElementById('settle-twd').value=(parseFloat(this.value)*r).toFixed(0)"></div>
       <div class="row2">
         <div class="fg"><label>匯率</label><input type="number" id="settle-rate" placeholder="4.70" inputmode="decimal" step="0.001" oninput="const r=parseFloat(document.getElementById('settle-rmb').value);if(r&&this.value)document.getElementById('settle-twd').value=(r*parseFloat(this.value)).toFixed(0)"></div>
         <div class="fg"><label>台幣金額</label><input type="number" id="settle-twd" placeholder="自動計算" inputmode="decimal"></div>
       </div>
       <div class="fg"><label>台幣收到帳戶</label><select id="settle-twd-acc" style="width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid #e5e5ea;background:#fff;font-size:15px;color:var(--txt);appearance:none;-webkit-appearance:none"><option value="">選擇帳戶</option></select></div>
-      <div class="fg"><label>換匯管道（選填）</label><input type="text" id="settle-ch" placeholder="例：唐磊打款換匯"></div>
+      <div class="fg"><label>結款管道（選填）</label><input type="text" id="settle-ch" placeholder="例：唐磊打款換匯"></div>
     </div>
     <div id="settle-flow-account" style="display:none">
-      <p style="font-size:13px;color:var(--txt2);margin:0 0 14px">款項先收到人民幣帳戶，稍後再換匯</p>
+      <p style="font-size:13px;color:var(--txt2);margin:0 0 14px">款項先收到人民幣帳戶，稍後再結款</p>
       <div class="fg"><label>收到哪個帳戶（CNY）</label><select id="settle-acc" style="width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid #e5e5ea;background:#fff;font-size:15px;color:var(--txt);appearance:none;-webkit-appearance:none"><option value="">選擇帳戶</option></select></div>
     </div>
     <div style="display:flex;gap:10px;margin-top:16px">
@@ -1102,7 +1102,7 @@ function renderRecords(){
     else if(r.type==='稅金'){main=esc(r.vendor||'');sub=[r.card,r.note].filter(Boolean).join(' · ');amt=[r.twd&&`<span class="red">-NT$${r.twd}</span>`,r.rmb&&`<span class="blue">+¥${r.rmb}</span>`].filter(Boolean).join('<br>');}
     else if(r.type==='其他'){main=esc(r.account||'');sub=esc(r.desc||'');const sign=r.dir==='收入'?'+':'-';const cls=r.dir==='收入'?'green':'red';amt=r.amount?`<span class="${cls}">${sign}NT$${r.amount}</span>`:'';}
     else if(r.type==='理賠'){main=esc(r.vendor||'');sub=esc(r.desc||'');amt=r.twd?`<span style="color:var(--claim)">-NT$ ${fmt(parseFloat(r.twd)||0)}</span>`:'';if(r.rmb)sub=(sub?sub+' · ':'')+`退¥${r.rmb}`;}
-    return `<div class="card c-${r.type}" onclick="showRecordDetail(${r.id})" style="cursor:pointer"><div class="rc-top"><span class="badge b-${r.type}">${r.type}</span><span class="rc-date">${r.date}</span><button class="rc-del" onclick="event.stopPropagation();delRec(${r.id})">刪除</button></div><div class="rc-body"><div><div class="rc-main">${main}</div><div class="rc-sub">${sub}${r.note&&r.type!=='稅金'&&r.type!=='其他'?'<br><i>'+esc(r.note)+'</i>':''}</div></div><div class="rc-amt">${amt}</div></div></div>`;
+    return `<div class="card c-${r.type}" onclick="showRecordDetail(${r.id})" style="cursor:pointer"><div class="rc-top"><span class="badge b-${r.type}">${typeLabel(r.type)}</span><span class="rc-date">${r.date}</span><button class="rc-del" onclick="event.stopPropagation();delRec(${r.id})">刪除</button></div><div class="rc-body"><div><div class="rc-main">${main}</div><div class="rc-sub">${sub}${r.note&&r.type!=='稅金'&&r.type!=='其他'?'<br><i>'+esc(r.note)+'</i>':''}</div></div><div class="rc-amt">${amt}</div></div></div>`;
   }).join('');
   el.innerHTML=summaryBar+`<button class="btn-export" onclick="exportCSV()">${curFilter==='全部'?'匯出全部 CSV':'匯出此類 CSV'}</button>`+cards;
 }
@@ -1372,7 +1372,7 @@ function showRecordDetail(id){
       </div>`
     :'';
 
-  document.getElementById('modal-deal-title').textContent=`${rec.type} · ${rec.date}`;
+  document.getElementById('modal-deal-title').textContent=`${typeLabel(rec.type)} · ${rec.date}`;
   document.getElementById('modal-deal-body').innerHTML=`
     <div style="background:#f9f9f9;border-radius:12px;padding:14px">
       <div style="font-size:16px;font-weight:700;margin-bottom:4px">${esc(mainLine)}</div>
@@ -1913,6 +1913,8 @@ function exportCSV(){
 }
 
 function fmt(n){return Math.round(n).toLocaleString('zh-TW');}
+const _typeLabel={'換匯':'結款'};
+function typeLabel(t){return _typeLabel[t]||t;}
 
 let _tt;
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),2000);}
