@@ -1202,7 +1202,7 @@ function showRecordDetail(id){
   const hasPT=r=>r.profit_twd!==undefined&&r.profit_twd!==''&&r.profit_twd!==null;
   const mrate=storedRates[ym]??getActualRate(ym,recs,defRate);
 
-  // Match by 8+ digit order numbers in note/card (exact, no fallback)
+  // Match by 8+ digit order numbers in note/card
   const searchText=[rec.note,rec.card].filter(Boolean).join(' ');
   const orderNums=(searchText.match(/\d{8,}/g)||[]);
   let related=[],isBatch=false;
@@ -1213,6 +1213,21 @@ function showRecordDetail(id){
       const rt=[r.note,r.card].filter(Boolean).join(' ');
       return orderNums.some(n=>rt.includes(n));
     });
+  }
+  // Fallback: same date + same airline + vendor name in note/card (for JL and other non-numeric records)
+  if(related.length===0&&rec.date&&(rec.type==='出貨'||rec.type==='進貨')){
+    const sameDay=recs.filter(r=>r.id!==rec.id&&r.date===rec.date);
+    if(rec.type==='出貨'&&rec.vendor){
+      const v=rec.vendor.toLowerCase();
+      related=sameDay.filter(r=>r.type==='進貨'&&
+        [r.note,r.card].filter(Boolean).join(' ').toLowerCase().includes(v)&&
+        (!rec.airline||!r.airline||r.airline===rec.airline));
+    }else if(rec.type==='進貨'){
+      const noteCard=[rec.note,rec.card].filter(Boolean).join(' ').toLowerCase();
+      related=sameDay.filter(r=>r.type==='出貨'&&r.vendor&&
+        noteCard.includes(r.vendor.toLowerCase())&&
+        (!rec.airline||!r.airline||r.airline===rec.airline));
+    }
   }
 
   // Calculate deal profit
