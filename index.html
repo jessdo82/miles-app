@@ -1827,7 +1827,9 @@ function openARSettle(vendor){
   // Populate CNY accounts
   const cnySel=document.getElementById('settle-acc');
   cnySel.innerHTML='<option value="">選擇帳戶</option>';
-  getAccounts().filter(a=>a.type==='人民幣帳戶').forEach(a=>{const o=document.createElement('option');o.value=a.name;o.textContent=`${a.name}（¥${fmt(getBalance(a.name))}）`;cnySel.appendChild(o);});
+  const cnyFirst=getAccounts().filter(a=>a.type==='人民幣帳戶');
+  const cnyOther=getAccounts().filter(a=>a.type!=='人民幣帳戶');
+  [...cnyFirst,...cnyOther].forEach(a=>{const o=document.createElement('option');o.value=a.name;o.textContent=a.type==='人民幣帳戶'?`${a.name}（¥${fmt(getBalance(a.name))}）`:a.name;cnySel.appendChild(o);});
   // Default flow
   showSettleFlow('exchange');
   setSeg('settle-type-seg',document.querySelector('#settle-type-seg .seg-opt'));
@@ -1874,11 +1876,15 @@ function populateCNYAccounts(){
   if(!sel)return;
   const cur=sel.value;
   sel.innerHTML='<option value="">— 不選 —</option>';
-  getAccounts().filter(a=>a.type==='人民幣帳戶').forEach(a=>{
+  const accs=getAccounts();
+  const cny=accs.filter(a=>a.type==='人民幣帳戶');
+  const other=accs.filter(a=>a.type!=='人民幣帳戶');
+  [...cny,...other].forEach(a=>{
     const opt=document.createElement('option');
     opt.value=a.name;
+    const isCNYType=a.type==='人民幣帳戶';
     const bal=getBalance(a.name);
-    opt.textContent=`${a.name}（¥${fmt(bal)} 餘額）`;
+    opt.textContent=isCNYType?`${a.name}（¥${fmt(bal)} 餘額）`:a.name;
     if(a.name===cur)opt.selected=true;
     sel.appendChild(opt);
   });
