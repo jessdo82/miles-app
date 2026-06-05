@@ -96,7 +96,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
 .card{background:#fff;border-radius:14px;padding:15px 16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.07);border-left:4px solid transparent}
 .card.c-出貨{border-left-color:var(--blue)}
 .card.c-進貨{border-left-color:var(--green)}
-.card.c-結款{border-left-color:var(--orange)}
+.card.c-結款,.card.c-換匯{border-left-color:var(--orange)}
 .card.c-稅金{border-left-color:var(--red)}
 .card.c-其他{border-left-color:var(--purple)}
 .card.c-理賠{border-left-color:var(--claim)}
@@ -104,7 +104,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
 .badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.2px}
 .b-出貨{background:#e0f0ff;color:var(--blue)}
 .b-進貨{background:#e3fced;color:#1d8c40}
-.b-結款{background:#fff4e0;color:#c96500}
+.b-結款,.b-換匯{background:#fff4e0;color:#c96500}
 .b-稅金{background:#ffe5e5;color:var(--red)}
 .b-其他{background:#f3e8ff;color:var(--purple)}
 .b-理賠{background:#ffeaea;color:var(--claim)}
@@ -579,7 +579,7 @@ function showLog(){
   }).join('');
   document.getElementById('modal-log').classList.add('open');
 }
-const getRecs=()=>JSON.parse(localStorage.getItem(RK)||'[]');
+const getRecs=()=>JSON.parse(localStorage.getItem(RK)||'[]').map(r=>r.type==='換匯'?{...r,type:'結款'}:r);
 const saveRecs=d=>localStorage.setItem(RK,JSON.stringify(d));
 const getAC=()=>JSON.parse(localStorage.getItem(AK)||'{}');
 const saveAC=d=>localStorage.setItem(AK,JSON.stringify(d));
@@ -1913,7 +1913,7 @@ function exportCSV(){
 }
 
 function fmt(n){return Math.round(n).toLocaleString('zh-TW');}
-const _typeLabel={'結款':'結款'};
+const _typeLabel={'結款':'結款','換匯':'結款'};
 function typeLabel(t){return _typeLabel[t]||t;}
 
 let _tt;
