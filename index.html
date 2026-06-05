@@ -356,6 +356,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
       <button class="btn-export" style="flex:1;margin:0" onclick="exportJSON()">備份 JSON</button>
       <button class="btn-export" style="flex:1;margin:0" onclick="openImport()">匯入資料</button>
     </div>
+    <button class="btn-export" style="width:100%;margin-bottom:12px" onclick="forceUpdate()">⟳ 檢查 App 更新（強制抓最新版）</button>
     <div id="sum-body"></div>
   </div>
 </div>
@@ -528,6 +529,19 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
 <div class="toast" id="toast"></div>
 
 <script>
+// ─── App 版本 / 強制更新 ───────────────────────────────────
+const APP_VERSION='2026.06.06-3';
+async function forceUpdate(){
+  try{
+    // 清除所有 Cache Storage（若有）
+    if(window.caches){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)));}
+    if(navigator.serviceWorker){const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()));}
+  }catch(e){}
+  // 加上時間戳查詢參數，強制繞過 HTTP 快取重新載入 index.html
+  const base=location.href.split('?')[0].split('#')[0];
+  location.replace(base+'?v='+Date.now());
+}
+
 // ─── Firebase ──────────────────────────────────────────────
 const FB='https://miles-salary-default-rtdb.firebaseio.com/data.json';
 
@@ -1808,7 +1822,8 @@ function renderSummary(){
       ${settledToggle}
     </div>`;
   })()}
-  ${monthCards}`;
+  ${monthCards}
+  <div style="text-align:center;font-size:11px;color:var(--txt3);margin-top:16px;padding-bottom:8px">版本 ${APP_VERSION}</div>`;
   if(rfCurrent||rtCurrent) setTimeout(calcRange,0);
 }
 
