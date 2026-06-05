@@ -1213,7 +1213,7 @@ function showRecordDetail(id){
       if(r.type!=='出貨'&&r.type!=='進貨')return false;
       const rt=[r.note,r.card].filter(Boolean).join(' ');
       if(!orderNums.some(n=>rt.includes(n)))return false;
-      if(r.date&&recMs){const diff=Math.abs(new Date(r.date).getTime()-recMs);if(diff>60*864e5)return false;}
+      if(r.date&&rec.date&&r.date.substring(0,10)!==rec.date.substring(0,10))return false;
       return true;
     });
   }
