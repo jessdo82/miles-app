@@ -1173,7 +1173,7 @@ function showRecordDetail(id){
   const hasPT=r=>r.profit_twd!==undefined&&r.profit_twd!==''&&r.profit_twd!==null;
   const mrate=storedRates[ym]??getActualRate(ym,recs,defRate);
 
-  // Step 1: match by 8+ digit order numbers in note/card
+  // Match by 8+ digit order numbers in note/card (exact, no fallback)
   const searchText=[rec.note,rec.card].filter(Boolean).join(' ');
   const orderNums=(searchText.match(/\d{8,}/g)||[]);
   let related=[],isBatch=false;
@@ -1184,43 +1184,6 @@ function showRecordDetail(id){
       const rt=[r.note,r.card].filter(Boolean).join(' ');
       return orderNums.some(n=>rt.includes(n));
     });
-  }
-
-  // Step 1.5: match by passenger/client name token (e.g. "JIA/LI", "TANG/LEI", or Chinese name)
-  // Extract: all-caps "WORD/WORD" patterns and 2-4 char Chinese name sequences
-  if(related.length===0){
-    const latinNames=(searchText.match(/[A-Z]{2,}\/[A-Z]{2,}/g)||[]);
-    const chineseNames=(searchText.match(/[一-鿿]{2,4}/g)||[]).filter(n=>
-      !['進貨','出貨','批次','航空','里程','萬哩','萬里','含佑','聯航','華航','長榮','國泰','南航','東航','泰航'].includes(n)
-    );
-    const nameTokens=[...latinNames,...chineseNames];
-    if(nameTokens.length>0){
-      const nameMatched=recs.filter(r=>{
-        if(r.id===rec.id)return false;
-        if(r.type!=='出貨'&&r.type!=='進貨')return false;
-        if(r.date?.substring(0,7)!==ym)return false;
-        if(rec.airline&&r.airline&&r.airline!==rec.airline)return false;
-        const rt=[r.note,r.card].filter(Boolean).join(' ');
-        return nameTokens.some(t=>rt.includes(t));
-      });
-      if(nameMatched.length>0)related=nameMatched;
-    }
-  }
-
-  // Step 2: fallback — same vendor/airline/month when no order-number or name match
-  if(related.length===0&&(rec.type==='出貨'||rec.type==='進貨')){
-    const vendorKey=(rec.vendor||rec.seller||'').trim();
-    if(vendorKey){
-      related=recs.filter(r=>{
-        if(r.id===rec.id)return false;
-        if(r.type!=='出貨'&&r.type!=='進貨')return false;
-        if(r.date?.substring(0,7)!==ym)return false;
-        if(rec.airline&&r.airline&&r.airline!==rec.airline)return false;
-        const rText=[r.note,r.vendor,r.seller].filter(Boolean).join(' ');
-        return rText.toLowerCase().includes(vendorKey.toLowerCase());
-      });
-      if(related.length>0)isBatch=true;
-    }
   }
 
   // Calculate deal profit
