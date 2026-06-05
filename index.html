@@ -42,6 +42,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang TC',sans-serif;backg
 #ftabs .tab[data-f2="其他"].active{background:var(--purple);box-shadow:0 2px 8px rgba(175,82,222,.3)}
 #atabs .tab[data-f="理賠"].active{background:var(--claim);box-shadow:0 3px 10px rgba(192,57,43,.3)}
 #ftabs .tab[data-f2="理賠"].active{background:var(--claim);box-shadow:0 2px 8px rgba(192,57,43,.3)}
+#atabs .tab[data-f="轉帳"].active{background:#30b0c7;box-shadow:0 3px 10px rgba(48,176,199,.3)}
+#ftabs .tab[data-f2="轉帳"].active{background:#30b0c7;box-shadow:0 2px 8px rgba(48,176,199,.3)}
 
 .ct{padding:16px 16px 100px;max-width:520px;margin:0 auto}
 
@@ -100,6 +102,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
 .card.c-稅金{border-left-color:var(--red)}
 .card.c-其他{border-left-color:var(--purple)}
 .card.c-理賠{border-left-color:var(--claim)}
+.card.c-轉帳{border-left-color:#30b0c7}
 .rc-top{display:flex;align-items:center;gap:8px;margin-bottom:9px}
 .badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.2px}
 .b-出貨{background:#e0f0ff;color:var(--blue)}
@@ -108,6 +111,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
 .b-稅金{background:#ffe5e5;color:var(--red)}
 .b-其他{background:#f3e8ff;color:var(--purple)}
 .b-理賠{background:#ffeaea;color:var(--claim)}
+.b-轉帳{background:#e0f7fa;color:#0097a7}
 .rc-date{font-size:12px;color:var(--txt3);margin-left:auto;font-weight:500}
 .rc-del{background:none;border:none;color:var(--txt3);font-size:12px;cursor:pointer;padding:3px 6px;border-radius:6px}
 .rc-del:active{color:var(--red)}
@@ -173,6 +177,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
       <div class="tab" data-f="稅金">代付稅金</div>
       <div class="tab" data-f="其他">其他</div>
       <div class="tab" data-f="理賠">理賠</div>
+      <div class="tab" data-f="轉帳">轉帳</div>
     </div>
   </div>
   <div class="ct">
@@ -293,6 +298,15 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
       <div class="fg"><label>說明</label><input type="text" id="cl-desc" placeholder="例：NH 掛票退費 CAO/XINGAN"></div>
       <button class="btn" style="background:var(--claim)" onclick="submit('理賠')">儲存理賠</button>
     </div>
+    <!-- 轉帳 -->
+    <div id="form-轉帳" style="display:none">
+      <div class="fg"><label>日期</label><input type="date" id="tr-date"></div>
+      <div class="fg"><label>從帳戶（轉出）</label><select id="tr-from" style="width:100%;padding:13px 15px;border-radius:12px;border:1.5px solid #e5e5ea;background:#fff;font-size:16px;color:var(--txt);appearance:none;-webkit-appearance:none"><option value="">選擇帳戶</option></select></div>
+      <div class="fg"><label>到帳戶（轉入）</label><select id="tr-to" style="width:100%;padding:13px 15px;border-radius:12px;border:1.5px solid #e5e5ea;background:#fff;font-size:16px;color:var(--txt);appearance:none;-webkit-appearance:none"><option value="">選擇帳戶</option></select></div>
+      <div class="fg"><label>金額</label><input type="number" id="tr-amt" placeholder="轉帳金額" inputmode="decimal"></div>
+      <div class="fg"><label>備註</label><input type="text" id="tr-note" placeholder="選填"></div>
+      <button class="btn" style="background:#30b0c7" onclick="submit('轉帳')">儲存轉帳</button>
+    </div>
   </div>
 </div>
 
@@ -325,6 +339,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
       <div class="tab" data-f2="稅金">稅金</div>
       <div class="tab" data-f2="其他">其他</div>
       <div class="tab" data-f2="理賠">理賠</div>
+      <div class="tab" data-f2="轉帳">轉帳</div>
     </div>
   </div>
   <div class="ct" id="rec-list"></div>
@@ -460,7 +475,23 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
     <div class="modal-handle"></div>
     <div class="modal-title" id="modal-deal-title">交易明細</div>
     <div id="modal-deal-body"></div>
-    <button class="btn btn-ghost btn-sm" style="margin-top:14px;width:100%" onclick="closeRecordDetail()">關閉</button>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn btn-sm" style="flex:1;background:#30b0c7" onclick="openEdit(_currentDetailId)">✏️ 編輯</button>
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeRecordDetail()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Record Modal -->
+<div class="modal-bg" id="modal-edit">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">編輯記錄</div>
+    <div id="edit-body" style="max-height:60vh;overflow-y:auto"></div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeEdit()">取消</button>
+      <button class="btn btn-sm" style="flex:1" onclick="saveEdit()">儲存變更</button>
+    </div>
   </div>
 </div>
 
@@ -642,7 +673,7 @@ function learn(field,val){
 
 // ─── Date ──────────────────────────────────────────────────
 const today=()=>new Date().toLocaleDateString('sv-SE');
-const setDates=()=>['s-date','b-date','x-date','t-date','o-date','cl-date'].forEach(id=>{
+const setDates=()=>['s-date','b-date','x-date','t-date','o-date','cl-date','tr-date'].forEach(id=>{
   const el=document.getElementById(id); if(el&&!el.value)el.value=today();
 });
 
@@ -816,12 +847,22 @@ function submit(type){
     Object.assign(rec,{date:v('cl-date')||today(),vendor:v('cl-vendor'),rmb:v('cl-rmb'),rate:v('cl-rate'),twd:v('cl-twd'),desc:v('cl-desc')});
     learn('vendor',rec.vendor);
     clear('cl-vendor','cl-rmb','cl-rate','cl-twd','cl-desc');
+  }else if(type==='轉帳'){
+    const fromAcc=document.getElementById('tr-from')?.value||'';
+    const toAcc=document.getElementById('tr-to')?.value||'';
+    if(!fromAcc||!toAcc||!v('tr-amt')){toast('請選擇帳戶並填寫金額');return;}
+    if(fromAcc===toAcc){toast('轉出和轉入帳戶不能相同');return;}
+    Object.assign(rec,{date:v('tr-date')||today(),from_account:fromAcc,to_account:toAcc,amount:v('tr-amt'),note:v('tr-note')});
+    clear('tr-amt','tr-note');
+    if(document.getElementById('tr-from'))document.getElementById('tr-from').value='';
+    if(document.getElementById('tr-to'))document.getElementById('tr-to').value='';
   }
   const recs=getRecs(); recs.unshift(rec); saveRecs(recs);
   const logDetail=rec.type==='出貨'?`${rec.vendor||''} ¥${rec.total||''} ${rec.payment_status==='paid'?'已付款':'未付款'}`
     :rec.type==='進貨'?`${rec.seller||''} ${rec.airline||''} ${rec.miles||''}萬 NT$${rec.total||''}`
     :rec.type==='結款'?`${rec.channel||''} ¥${rec.rmb||''}→NT$${rec.twd||''} @${rec.rate||''}`
     :rec.type==='理賠'?`${rec.vendor||''} NT$${rec.twd||''} ${rec.desc||''}`
+    :rec.type==='轉帳'?`${rec.from_account||''}→${rec.to_account||''} NT$${rec.amount||''}`
     :`${rec.account||rec.vendor||''}`;
   logActivity('新增'+type, logDetail);
   setDates(); toast('✓ 已儲存');
@@ -841,6 +882,8 @@ function getBalance(accName){
       // Only RMB-denominated 出貨 goes into CNY accounts
       if(r.type==='出貨'&&r.payment_status==='paid'&&r.paid_to===accName&&r.sell_currency!=='TWD') delta+=parseFloat(r.total)||0;
       if(r.type==='結款'&&r.from_account===accName) delta-=parseFloat(r.rmb)||0;
+      if(r.type==='轉帳'&&r.from_account===accName) delta-=parseFloat(r.amount)||0;
+      if(r.type==='轉帳'&&r.to_account===accName) delta+=parseFloat(r.amount)||0;
     });
     // AR settlements: vendor paid later and money went to this account
     const ar=getAR();
@@ -856,6 +899,8 @@ function getBalance(accName){
       }
       // TWD-denominated 出貨 paid into a TWD account
       if(r.type==='出貨'&&r.payment_status==='paid'&&r.paid_to===accName&&r.sell_currency==='TWD') delta+=parseFloat(r.total)||0;
+      if(r.type==='轉帳'&&r.from_account===accName) delta-=parseFloat(r.amount)||0;
+      if(r.type==='轉帳'&&r.to_account===accName) delta+=parseFloat(r.amount)||0;
     });
   }
   return start+delta;
@@ -1102,6 +1147,7 @@ function renderRecords(){
     else if(r.type==='稅金'){main=esc(r.vendor||'');sub=[r.card,r.note].filter(Boolean).join(' · ');amt=[r.twd&&`<span class="red">-NT$${r.twd}</span>`,r.rmb&&`<span class="blue">+¥${r.rmb}</span>`].filter(Boolean).join('<br>');}
     else if(r.type==='其他'){main=esc(r.account||'');sub=esc(r.desc||'');const sign=r.dir==='收入'?'+':'-';const cls=r.dir==='收入'?'green':'red';amt=r.amount?`<span class="${cls}">${sign}NT$${r.amount}</span>`:'';}
     else if(r.type==='理賠'){main=esc(r.vendor||'');sub=esc(r.desc||'');amt=r.twd?`<span style="color:var(--claim)">-NT$ ${fmt(parseFloat(r.twd)||0)}</span>`:'';if(r.rmb)sub=(sub?sub+' · ':'')+`退¥${r.rmb}`;}
+    else if(r.type==='轉帳'){main=esc(`${r.from_account||''} → ${r.to_account||''}`);sub=esc(r.note||'');amt=r.amount?`<span style="color:#0097a7">${fmt(parseFloat(r.amount)||0)}</span>`:'';}
     return `<div class="card c-${r.type}" onclick="showRecordDetail(${r.id})" style="cursor:pointer"><div class="rc-top"><span class="badge b-${r.type}">${typeLabel(r.type)}</span><span class="rc-date">${r.date}</span><button class="rc-del" onclick="event.stopPropagation();delRec(${r.id})">刪除</button></div><div class="rc-body"><div><div class="rc-main">${main}</div><div class="rc-sub">${sub}${r.note&&r.type!=='稅金'&&r.type!=='其他'?'<br><i>'+esc(r.note)+'</i>':''}</div></div><div class="rc-amt">${amt}</div></div></div>`;
   }).join('');
   el.innerHTML=summaryBar+`<button class="btn-export" onclick="exportCSV()">${curFilter==='全部'?'匯出全部 CSV':'匯出此類 CSV'}</button>`+cards;
@@ -1192,10 +1238,12 @@ function calcRange(){
   el.innerHTML=`<span class="${cls}" style="font-size:24px;font-weight:800">NT$ ${fmt(total)}</span><div style="font-size:12px;color:var(--txt3);margin-top:4px">${inRange.length} 個月合計</div>`;
 }
 
+let _currentDetailId=null;
 function showRecordDetail(id){
   const recs=getRecs();
   const rec=recs.find(r=>r.id==id);
   if(!rec)return;
+  _currentDetailId=id;
   const ym=rec.date?.substring(0,7)||'';
   const storedRates=getRates();
   const defRate=getEstRate();
@@ -1295,11 +1343,13 @@ function showRecordDetail(id){
   // Build display
   const mainLine=rec.type==='出貨'?[rec.vendor,rec.airline].filter(Boolean).join(' · ')
     :rec.type==='進貨'?[rec.seller,rec.airline].filter(Boolean).join(' · ')
+    :rec.type==='轉帳'?`${rec.from_account||''} → ${rec.to_account||''}`
     :rec.vendor||rec.channel||rec.account||'';
   const subLine=[rec.miles&&rec.miles+'萬哩',rec.unitprice&&'@'+rec.unitprice].filter(Boolean).join(' ');
   const amtLine=rec.type==='出貨'
     ?(hasPT(rec)?`<span class="blue">NT$ ${fmt(parseFloat(rec.twd)||0)}</span>`:(rec.total?`<span class="blue">${rec.sell_currency==='TWD'?'+NT$':'+¥'}${rec.total}</span>`:''))
     :rec.type==='進貨'?(rec.total?`<span class="red">-NT$ ${fmt((parseFloat(rec.total)||0)+(parseFloat(rec.fee)||0))}</span>${rec.buy_currency==='RMB'?`<br><span style="font-size:11px;color:var(--txt3)">¥${rec.buy_rmb||rec.total} × ${rec.buy_rate||'?'}</span>`:''}`:'')
+    :rec.type==='轉帳'?(rec.amount?`<span style="color:#0097a7;font-size:18px;font-weight:800">NT$ ${fmt(parseFloat(rec.amount)||0)}</span>`:'')
     :rec.type==='理賠'?(rec.twd?`<span style="color:var(--claim);font-size:18px;font-weight:800">-NT$ ${fmt(parseFloat(rec.twd)||0)}</span>`:''):'';
 
   // Related records (max 5, with overflow count)
@@ -1386,6 +1436,51 @@ function showRecordDetail(id){
   document.getElementById('modal-deal').classList.add('open');
 }
 function closeRecordDetail(){document.getElementById('modal-deal').classList.remove('open');}
+
+// ─── Edit Record ───────────────────────────────────────────
+const EDIT_FIELDS={
+  '出貨':[['date','日期','date'],['vendor','廠商','text'],['airline','航空公司','text'],['miles','哩程（萬）','number'],['unitprice','單價','number'],['total','總金額','number'],['note','備註','text']],
+  '進貨':[['date','日期','date'],['seller','賣家','text'],['airline','航空公司','text'],['miles','哩程（萬）','number'],['unitprice','單價','number'],['total','總成本（TWD）','number'],['fee','手續費','number'],['payment','付款帳戶','text'],['note','備註','text']],
+  '結款':[['date','日期','date'],['channel','管道','text'],['rmb','人民幣（CNY）','number'],['twd','台幣（TWD）','number'],['rate','匯率','number'],['account','收款帳戶','text'],['note','備註','text']],
+  '稅金':[['date','日期','date'],['vendor','廠商','text'],['twd','刷卡金額（TWD）','number'],['rmb','回款（RMB）','number'],['card','刷卡帳戶','text'],['note','備註','text']],
+  '其他':[['date','日期','date'],['account','帳戶','text'],['amount','金額','number'],['desc','說明','text']],
+  '理賠':[['date','日期','date'],['vendor','退費對象','text'],['rmb','退還（RMB）','number'],['rate','匯率','number'],['twd','台幣損失','number'],['desc','說明','text']],
+  '轉帳':[['date','日期','date'],['from_account','從帳戶','text'],['to_account','到帳戶','text'],['amount','金額','number'],['note','備註','text']],
+};
+let _editId=null;
+function openEdit(id){
+  const rec=getRecs().find(r=>r.id==id);
+  if(!rec)return;
+  _editId=id;
+  const fields=EDIT_FIELDS[rec.type]||[];
+  document.getElementById('edit-body').innerHTML=
+    `<div style="font-size:12px;color:var(--txt3);margin-bottom:12px">類型：<b style="color:var(--txt)">${typeLabel(rec.type)}</b>（類型不可變更）</div>`+
+    fields.map(([k,label,t])=>{
+      const val=(rec[k]??'').toString().replace(/"/g,'&quot;');
+      return `<div class="fg"><label>${label}</label><input type="${t}" id="edit-${k}" value="${val}" ${t==='number'?'inputmode="decimal" step="any"':''}></div>`;
+    }).join('');
+  closeRecordDetail();
+  document.getElementById('modal-edit').classList.add('open');
+}
+function closeEdit(){document.getElementById('modal-edit').classList.remove('open');_editId=null;}
+function saveEdit(){
+  const recs=getRecs();
+  const idx=recs.findIndex(r=>r.id==_editId);
+  if(idx<0){closeEdit();return;}
+  const rec=recs[idx];
+  const fields=EDIT_FIELDS[rec.type]||[];
+  fields.forEach(([k])=>{
+    const el=document.getElementById('edit-'+k);
+    if(el)rec[k]=el.value.trim();
+  });
+  saveRecs(recs);
+  logActivity('編輯'+rec.type,`${rec.id}`);
+  closeEdit();
+  toast('✓ 已更新');
+  renderRecords();
+  if(document.getElementById('sec-acc').classList.contains('active'))renderAccounts();
+  if(document.getElementById('sec-sum').classList.contains('active'))renderSummary();
+}
 
 // ─── Inventory detail & sell ───────────────────────────────
 function openInventoryDetail(airline){
@@ -1871,6 +1966,25 @@ function confirmARSettle(){
   renderSummary();populateExchangeVendors();
 }
 
+function populateTransferAccounts(){
+  const fromSel=document.getElementById('tr-from');
+  const toSel=document.getElementById('tr-to');
+  if(!fromSel||!toSel)return;
+  const curF=fromSel.value, curT=toSel.value;
+  const accs=getAccounts();
+  [fromSel,toSel].forEach((sel,i)=>{
+    sel.innerHTML='<option value="">選擇帳戶</option>';
+    accs.forEach(a=>{
+      const opt=document.createElement('option');
+      opt.value=a.name;
+      const isCNY=a.type==='人民幣帳戶';
+      const bal=getBalance(a.name);
+      opt.textContent=`${a.name}（${isCNY?'¥':'NT$'}${fmt(bal)}）`;
+      if((i===0&&a.name===curF)||(i===1&&a.name===curT))opt.selected=true;
+      sel.appendChild(opt);
+    });
+  });
+}
 function populateCNYAccounts(){
   const sel=document.getElementById('x-from-acc');
   if(!sel)return;
@@ -1904,6 +2018,7 @@ function exportCSV(){
     if(r.type==='稅金')return[r.date,'稅金',r.vendor,'','','',r.twd+'TWD/'+r.rmb+'RMB','',r.card,r.note];
     if(r.type==='其他')return[r.date,'其他','','','','',r.amount,'TWD',r.account,r.desc];
     if(r.type==='理賠')return[r.date,'理賠',r.vendor,'','','',r.twd,'TWD','',r.desc||''];
+    if(r.type==='轉帳')return[r.date,'轉帳',`${r.from_account}→${r.to_account}`,'','','',r.amount,'TWD','',r.note||''];
     return[];
   });
   const csv=[hdr,...rows].map(row=>row.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
@@ -1937,9 +2052,10 @@ document.querySelectorAll('#atabs .tab').forEach(tab=>{
     const f=tab.dataset.f;
     document.querySelectorAll('#atabs .tab').forEach(t=>t.classList.remove('active'));
     tab.classList.add('active');
-    ['出貨','進貨','結款','稅金','其他','理賠'].forEach(x=>document.getElementById('form-'+x).style.display=x===f?'block':'none');
+    ['出貨','進貨','結款','稅金','其他','理賠','轉帳'].forEach(x=>document.getElementById('form-'+x).style.display=x===f?'block':'none');
     if(f==='結款'){populateExchangeVendors();populateCNYAccounts();}
     if(f==='理賠'){const re=document.getElementById('cl-rate');if(re&&!re.value)re.value=getEstRate();setDates();}
+    if(f==='轉帳'){populateTransferAccounts();setDates();}
   });
 });
 document.querySelectorAll('#ftabs .tab').forEach(tab=>{
