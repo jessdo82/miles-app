@@ -1848,9 +1848,9 @@ function confirmARSettle(){
     const rate=parseFloat(document.getElementById('settle-rate').value);
     const twd=parseFloat(document.getElementById('settle-twd').value);
     const acc=document.getElementById('settle-twd-acc').value;
-    const ch=(document.getElementById('settle-ch').value||'').trim()||_settleVendor+'打款結款';
+    const ch=(document.getElementById('settle-ch').value||'').trim()||_settleVendor+'打款';
     if(!rate||!twd||!acc){toast('請填寫匯率、台幣金額和收款帳戶');return;}
-    const rec={id:Date.now(),type:'結款',date:today(),channel:ch,rmb:String(rmb),twd:String(twd),rate:String(rate),account:acc,from_vendor:_settleVendor,note:`${_settleVendor} AR結清結款`};
+    const rec={id:Date.now(),type:'結款',date:today(),channel:ch,rmb:String(rmb),twd:String(twd),rate:String(rate),account:acc,from_vendor:_settleVendor,note:`${_settleVendor} AR結清`};
     const recs=getRecs();recs.unshift(rec);saveRecs(recs);
     ar[_settleVendor].owed=Math.max(0,(ar[_settleVendor].owed||0)-rmb);
     ar[_settleVendor].settled_to=acc;ar[_settleVendor].settled_at=today();
