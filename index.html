@@ -549,12 +549,17 @@ async function syncCloud(){
     const allDeleted=[...new Set([...localDeleted,...cloudDeleted])];
     saveDeleted(allDeleted);
 
-    // 3. 合併 records（先過濾已刪除的 ID，再合併本機新增）
+    // 3. 合併 records（同一筆 id 取「最後修改時間 _t」較新的版本，本機編輯不被雲端舊版蓋回）
     const localRecs=getRecs().filter(r=>!allDeleted.includes(r.id));
     const cloudRecs=(Array.isArray(cloud?.records)?cloud.records:[]).filter(r=>!allDeleted.includes(r.id));
-    const cloudMap=new Map(cloudRecs.map(r=>[r.id,r]));
-    const localOnlyRecs=localRecs.filter(r=>!cloudMap.has(r.id));
-    const mergedRecs=[...cloudMap.values(),...localOnlyRecs].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.id-a.id));
+    const byId=new Map();
+    cloudRecs.forEach(r=>byId.set(r.id,r));
+    localRecs.forEach(r=>{
+      const c=byId.get(r.id);
+      if(!c)byId.set(r.id,r);                  // 本機新增
+      else if((r._t||0)>(c._t||0))byId.set(r.id,r); // 本機編輯較新 → 用本機版本
+    });
+    const mergedRecs=[...byId.values()].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.id-a.id));
 
     // 4. 合併 accounts（雲端優先，過濾已刪除）
     const localAccs=getAccounts();
@@ -782,7 +787,7 @@ const v=id=>(document.getElementById(id)?.value||'').trim();
 
 // ─── Submit ────────────────────────────────────────────────
 function submit(type){
-  const rec={id:Date.now(),type};
+  const rec={id:Date.now(),type,_t:Date.now()};
   if(type==='出貨'){
     if(!v('s-vendor')){toast('請填寫廠商');return;}
     const payStatus=segVal('s-pay-seg')||'unpaid';
@@ -1475,6 +1480,7 @@ function saveEdit(){
     const el=document.getElementById('edit-'+k);
     if(el)rec[k]=el.value.trim();
   });
+  rec._t=Date.now();
   saveRecs(recs);
   logActivity('編輯'+rec.type,`${rec.id}`);
   closeEdit();
@@ -1585,6 +1591,7 @@ function toggleInventory(id){
   const wasInv=recs[idx].is_inventory;
   if(wasInv){delete recs[idx].is_inventory;}
   else{recs[idx].is_inventory=true;}
+  recs[idx]._t=Date.now();
   saveRecs(recs);
   logActivity(wasInv?'移出庫存':'移入庫存',`${recs[idx].airline||''} ${recs[idx].miles||''}萬哩`);
   toast(wasInv?'已標記為已售出':'已加入哩程庫存');
