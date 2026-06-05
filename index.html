@@ -388,6 +388,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
         <option value="其他">其他</option>
       </select>
     </div>
+    <div class="fg"><label>起始餘額 <span style="font-size:11px;color:#999;font-weight:400">（帳戶已有的金額，選填）</span></label><input type="number" id="ma-bal" placeholder="0" inputmode="decimal" step="0.01"></div>
     <div style="display:flex;gap:10px;margin-top:8px">
       <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeAccModal()">取消</button>
       <button class="btn btn-sm" style="flex:1" onclick="saveAccount()">儲存</button>
@@ -979,6 +980,7 @@ function openAccModal(id){
     document.getElementById('modal-acc-title').textContent='編輯帳戶';
     document.getElementById('ma-name').value=acc.name;
     document.getElementById('ma-type').value=acc.type||'銀行';
+    document.getElementById('ma-bal').value=acc.startBalance||'';
     delWrap.style.display='block';
     // Show account transactions
     const txWrap=document.getElementById('ma-tx-wrap');
@@ -987,6 +989,7 @@ function openAccModal(id){
     document.getElementById('modal-acc-title').textContent='新增帳戶';
     document.getElementById('ma-name').value='';
     document.getElementById('ma-type').value='銀行';
+    document.getElementById('ma-bal').value='';
     delWrap.style.display='none';
     const txWrap=document.getElementById('ma-tx-wrap');
     if(txWrap)txWrap.innerHTML='';
@@ -999,7 +1002,8 @@ function saveAccount(){
   if(!name){toast('請填帳戶名稱');return;}
   const type=document.getElementById('ma-type').value;
   const existingAcc=editAccId?getAccounts().find(a=>a.id===editAccId):null;
-  const startBalance=existingAcc?parseFloat(existingAcc.startBalance)||0:0;
+  const balInput=parseFloat(document.getElementById('ma-bal').value);
+  const startBalance=isNaN(balInput)?(existingAcc?parseFloat(existingAcc.startBalance)||0:0):balInput;
   const accounts=getAccounts();
   if(editAccId){
     const idx=accounts.findIndex(a=>a.id===editAccId);
