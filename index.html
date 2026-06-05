@@ -31,13 +31,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang TC',sans-serif;backg
 .tab.active{color:#fff;border-color:transparent}
 #atabs .tab[data-f="出貨"].active{background:var(--blue);box-shadow:0 3px 10px rgba(0,122,255,.3)}
 #atabs .tab[data-f="進貨"].active{background:var(--green);box-shadow:0 3px 10px rgba(52,199,89,.3)}
-#atabs .tab[data-f="換匯"].active{background:var(--orange);box-shadow:0 3px 10px rgba(255,149,0,.3)}
+#atabs .tab[data-f="結款"].active{background:var(--orange);box-shadow:0 3px 10px rgba(255,149,0,.3)}
 #atabs .tab[data-f="稅金"].active{background:var(--red);box-shadow:0 3px 10px rgba(255,59,48,.3)}
 #atabs .tab[data-f="其他"].active{background:var(--purple);box-shadow:0 3px 10px rgba(175,82,222,.3)}
 #ftabs .tab[data-f2="全部"].active{background:var(--txt2);box-shadow:0 2px 8px rgba(110,110,115,.3)}
 #ftabs .tab[data-f2="出貨"].active{background:var(--blue);box-shadow:0 2px 8px rgba(0,122,255,.3)}
 #ftabs .tab[data-f2="進貨"].active{background:var(--green);box-shadow:0 2px 8px rgba(52,199,89,.3)}
-#ftabs .tab[data-f2="換匯"].active{background:var(--orange);box-shadow:0 2px 8px rgba(255,149,0,.3)}
+#ftabs .tab[data-f2="結款"].active{background:var(--orange);box-shadow:0 2px 8px rgba(255,149,0,.3)}
 #ftabs .tab[data-f2="稅金"].active{background:var(--red);box-shadow:0 2px 8px rgba(255,59,48,.3)}
 #ftabs .tab[data-f2="其他"].active{background:var(--purple);box-shadow:0 2px 8px rgba(175,82,222,.3)}
 #atabs .tab[data-f="理賠"].active{background:var(--claim);box-shadow:0 3px 10px rgba(192,57,43,.3)}
@@ -96,7 +96,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
 .card{background:#fff;border-radius:14px;padding:15px 16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.07);border-left:4px solid transparent}
 .card.c-出貨{border-left-color:var(--blue)}
 .card.c-進貨{border-left-color:var(--green)}
-.card.c-換匯{border-left-color:var(--orange)}
+.card.c-結款{border-left-color:var(--orange)}
 .card.c-稅金{border-left-color:var(--red)}
 .card.c-其他{border-left-color:var(--purple)}
 .card.c-理賠{border-left-color:var(--claim)}
@@ -104,7 +104,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
 .badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.2px}
 .b-出貨{background:#e0f0ff;color:var(--blue)}
 .b-進貨{background:#e3fced;color:#1d8c40}
-.b-換匯{background:#fff4e0;color:#c96500}
+.b-結款{background:#fff4e0;color:#c96500}
 .b-稅金{background:#ffe5e5;color:var(--red)}
 .b-其他{background:#f3e8ff;color:var(--purple)}
 .b-理賠{background:#ffeaea;color:var(--claim)}
@@ -169,7 +169,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
     <div class="tabs" id="atabs">
       <div class="tab active" data-f="出貨">出貨</div>
       <div class="tab" data-f="進貨">進貨</div>
-      <div class="tab" data-f="換匯">結款</div>
+      <div class="tab" data-f="結款">結款</div>
       <div class="tab" data-f="稅金">代付稅金</div>
       <div class="tab" data-f="其他">其他</div>
       <div class="tab" data-f="理賠">理賠</div>
@@ -235,9 +235,9 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
       <button class="btn" onclick="submit('進貨')">儲存進貨</button>
     </div>
     <!-- 結款 -->
-    <div id="form-換匯" style="display:none">
+    <div id="form-結款" style="display:none">
       <div class="fg"><label>日期</label><input type="date" id="x-date"></div>
-      <div class="fg"><label>結款管道</label><div class="acw"><input type="text" id="x-ch" placeholder="換匯管道" autocomplete="off"><div class="acl" id="x-ch-ac"></div></div></div>
+      <div class="fg"><label>結款管道</label><div class="acw"><input type="text" id="x-ch" placeholder="結款管道" autocomplete="off"><div class="acl" id="x-ch-ac"></div></div></div>
       <div class="row2">
         <div class="fg"><label>人民幣（CNY）</label><input type="number" id="x-rmb" placeholder="CNY" inputmode="decimal"></div>
         <div class="fg"><label>台幣（TWD）</label><input type="number" id="x-twd" placeholder="TWD" inputmode="decimal"></div>
@@ -253,7 +253,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
         <div id="x-from-hint" style="font-size:11px;color:#888;margin-top:4px"></div>
       </div>
       <div class="fg"><label>備註</label><input type="text" id="x-note" placeholder="選填"></div>
-      <button class="btn" onclick="submit('換匯')">儲存結款</button>
+      <button class="btn" onclick="submit('結款')">儲存結款</button>
     </div>
     <!-- 稅金 -->
     <div id="form-稅金" style="display:none">
@@ -321,7 +321,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
       <div class="tab active" data-f2="全部">全部</div>
       <div class="tab" data-f2="出貨">出貨</div>
       <div class="tab" data-f2="進貨">進貨</div>
-      <div class="tab" data-f2="換匯">結款</div>
+      <div class="tab" data-f2="結款">結款</div>
       <div class="tab" data-f2="稅金">稅金</div>
       <div class="tab" data-f2="其他">其他</div>
       <div class="tab" data-f2="理賠">理賠</div>
@@ -431,7 +431,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
         <div class="fg"><label>台幣金額</label><input type="number" id="settle-twd" placeholder="自動計算" inputmode="decimal"></div>
       </div>
       <div class="fg"><label>台幣收到帳戶</label><select id="settle-twd-acc" style="width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid #e5e5ea;background:#fff;font-size:15px;color:var(--txt);appearance:none;-webkit-appearance:none"><option value="">選擇帳戶</option></select></div>
-      <div class="fg"><label>結款管道（選填）</label><input type="text" id="settle-ch" placeholder="例：唐磊打款換匯"></div>
+      <div class="fg"><label>結款管道（選填）</label><input type="text" id="settle-ch" placeholder="例：唐磊打款結款"></div>
     </div>
     <div id="settle-flow-account" style="display:none">
       <p style="font-size:13px;color:var(--txt2);margin:0 0 14px">款項先收到人民幣帳戶，稍後再結款</p>
@@ -731,7 +731,7 @@ function setupCalc(){
       if(rmb&&rr)document.getElementById('b-twd-cost').value=(rmb*rr).toFixed(0);
     }
   }));
-  // 換匯 bidirectional: RMB+TWD→rate, RMB+rate→TWD
+  // 結款 bidirectional: RMB+TWD→rate, RMB+rate→TWD
   ['x-rmb','x-twd','x-rate'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{
     const rmb=parseFloat(document.getElementById('x-rmb')?.value);
     const twd=parseFloat(document.getElementById('x-twd')?.value);
@@ -790,8 +790,8 @@ function submit(type){
     document.getElementById('b-airline').value='';
     setSeg('b-curr-seg',document.querySelector('#b-curr-seg .seg-opt'));
     setBuyCurrency('TWD');
-  }else if(type==='換匯'){
-    if(!v('x-ch')){toast('請填寫換匯管道');return;}
+  }else if(type==='結款'){
+    if(!v('x-ch')){toast('請填寫結款管道');return;}
     const fromVendor=document.getElementById('x-from')?.value||'';
     const fromAccount=document.getElementById('x-from-acc')?.value||'';
     Object.assign(rec,{date:v('x-date')||today(),channel:v('x-ch'),rmb:v('x-rmb'),twd:v('x-twd'),rate:v('x-rate'),account:v('x-acc'),from_vendor:fromVendor,from_account:fromAccount,note:v('x-note')});
@@ -820,7 +820,7 @@ function submit(type){
   const recs=getRecs(); recs.unshift(rec); saveRecs(recs);
   const logDetail=rec.type==='出貨'?`${rec.vendor||''} ¥${rec.total||''} ${rec.payment_status==='paid'?'已付款':'未付款'}`
     :rec.type==='進貨'?`${rec.seller||''} ${rec.airline||''} ${rec.miles||''}萬 NT$${rec.total||''}`
-    :rec.type==='換匯'?`${rec.channel||''} ¥${rec.rmb||''}→NT$${rec.twd||''} @${rec.rate||''}`
+    :rec.type==='結款'?`${rec.channel||''} ¥${rec.rmb||''}→NT$${rec.twd||''} @${rec.rate||''}`
     :rec.type==='理賠'?`${rec.vendor||''} NT$${rec.twd||''} ${rec.desc||''}`
     :`${rec.account||rec.vendor||''}`;
   logActivity('新增'+type, logDetail);
@@ -840,7 +840,7 @@ function getBalance(accName){
     recs.forEach(r=>{
       // Only RMB-denominated 出貨 goes into CNY accounts
       if(r.type==='出貨'&&r.payment_status==='paid'&&r.paid_to===accName&&r.sell_currency!=='TWD') delta+=parseFloat(r.total)||0;
-      if(r.type==='換匯'&&r.from_account===accName) delta-=parseFloat(r.rmb)||0;
+      if(r.type==='結款'&&r.from_account===accName) delta-=parseFloat(r.rmb)||0;
     });
     // AR settlements: vendor paid later and money went to this account
     const ar=getAR();
@@ -848,7 +848,7 @@ function getBalance(accName){
   }else{
     recs.forEach(r=>{
       if(r.type==='進貨'&&r.payment===accName) delta-=(parseFloat(r.total)||0)+(parseFloat(r.fee)||0);
-      if(r.type==='換匯'&&r.account===accName) delta+=parseFloat(r.twd)||0;
+      if(r.type==='結款'&&r.account===accName) delta+=parseFloat(r.twd)||0;
       if(r.type==='稅金'&&r.card===accName) delta-=parseFloat(r.twd)||0;
       if(r.type==='其他'&&r.account===accName){
         if(r.dir==='收入') delta+=parseFloat(r.amount)||0;
@@ -1098,7 +1098,7 @@ function renderRecords(){
       const bTotal=(parseFloat(r.total)||0)+(parseFloat(r.fee)||0);
       amt=bTotal?`<span class="red">-NT$${bTotal}</span>`:'';
     }
-    else if(r.type==='換匯'){main=esc(r.channel||'');sub=[r.rate&&'匯率'+r.rate,r.account,r.from_vendor&&'來自 '+r.from_vendor].filter(Boolean).join(' · ');amt=(r.rmb||r.twd)?`<span class="orange">¥${r.rmb}→$${r.twd}</span>`:'';}
+    else if(r.type==='結款'){main=esc(r.channel||'');sub=[r.rate&&'匯率'+r.rate,r.account,r.from_vendor&&'來自 '+r.from_vendor].filter(Boolean).join(' · ');amt=(r.rmb||r.twd)?`<span class="orange">¥${r.rmb}→$${r.twd}</span>`:'';}
     else if(r.type==='稅金'){main=esc(r.vendor||'');sub=[r.card,r.note].filter(Boolean).join(' · ');amt=[r.twd&&`<span class="red">-NT$${r.twd}</span>`,r.rmb&&`<span class="blue">+¥${r.rmb}</span>`].filter(Boolean).join('<br>');}
     else if(r.type==='其他'){main=esc(r.account||'');sub=esc(r.desc||'');const sign=r.dir==='收入'?'+':'-';const cls=r.dir==='收入'?'green':'red';amt=r.amount?`<span class="${cls}">${sign}NT$${r.amount}</span>`:'';}
     else if(r.type==='理賠'){main=esc(r.vendor||'');sub=esc(r.desc||'');amt=r.twd?`<span style="color:var(--claim)">-NT$ ${fmt(parseFloat(r.twd)||0)}</span>`:'';if(r.rmb)sub=(sub?sub+' · ':'')+`退¥${r.rmb}`;}
@@ -1122,8 +1122,8 @@ function delRec(id){
 
 // ─── Month net helper ──────────────────────────────────────
 function getActualRate(ym,recs,defRate){
-  // Weighted average of actual 換匯 records this month; fall back to defRate
-  const ex=recs.filter(r=>r.type==='換匯'&&r.date?.startsWith(ym)&&r.rmb&&r.twd);
+  // Weighted average of actual 結款 records this month; fall back to defRate
+  const ex=recs.filter(r=>r.type==='結款'&&r.date?.startsWith(ym)&&r.rmb&&r.twd);
   if(!ex.length)return defRate;
   const rmb=ex.reduce((s,r)=>s+(parseFloat(r.rmb)||0),0);
   const twd=ex.reduce((s,r)=>s+(parseFloat(r.twd)||0),0);
@@ -1150,7 +1150,7 @@ function getMonthNet(ym,recs,profits,storedRates,defRate){
     return withP.length>0&&withoutP.length===0?directP:directP+calcRev-cost;
   }
   // Split rate: exchanged portion uses actual TWD received; unexchanged uses defRate estimate
-  const ex=recs.filter(r=>r.type==='換匯'&&r.date?.startsWith(ym)&&r.rmb&&r.twd);
+  const ex=recs.filter(r=>r.type==='結款'&&r.date?.startsWith(ym)&&r.rmb&&r.twd);
   const totalExRMB=ex.reduce((s,r)=>s+(parseFloat(r.rmb)||0),0);
   const totalExTWD=ex.reduce((s,r)=>s+(parseFloat(r.twd)||0),0);
   let calcRev;
@@ -1332,13 +1332,13 @@ function showRecordDetail(id){
     </div>`;
   }
 
-  // Enhanced 換匯 detail
+  // Enhanced 結款 detail
   let exchangeHTML='';
-  if(rec.type==='換匯'){
+  if(rec.type==='結款'){
     const accAfter=rec.account?getBalance(rec.account):null;
     const fromAccAfter=rec.from_account?getBalance(rec.from_account):null;
     const rows=[
-      rec.channel&&['換匯管道',rec.channel],
+      rec.channel&&['結款管道',rec.channel],
       rec.rmb&&['人民幣（CNY）',`¥ ${fmt(parseFloat(rec.rmb))}`],
       rec.twd&&['台幣（TWD）',`NT$ ${fmt(parseFloat(rec.twd))}`],
       rec.rate&&['匯率',`${rec.rate} TWD/CNY`],
@@ -1584,7 +1584,7 @@ function renderSummary(){
     const sellTWDRecs=withoutProfit.filter(r=>r.sell_currency==='TWD');
     const totalSellTWDDirect=sellTWDRecs.reduce((s,r)=>s+(parseFloat(r.total)||0),0);
     // Split rate breakdown (only for RMB portion)
-    const exRecs=recs.filter(r=>r.type==='換匯'&&r.date?.startsWith(ym)&&r.rmb&&r.twd);
+    const exRecs=recs.filter(r=>r.type==='結款'&&r.date?.startsWith(ym)&&r.rmb&&r.twd);
     const totalExRMB=exRecs.reduce((s,r)=>s+(parseFloat(r.rmb)||0),0);
     const totalExTWD=exRecs.reduce((s,r)=>s+(parseFloat(r.twd)||0),0);
     const actualRate=totalExRMB>0?totalExTWD/totalExRMB:0;
@@ -1686,7 +1686,7 @@ function renderSummary(){
     const settledRows=settledEntries.map(([v,{owed}])=>mkRow(v,owed)).join('');
     const settledToggle=settledEntries.length?`<div style="margin-top:8px"><button onclick="const el=document.getElementById('ar-settled');el.style.display=el.style.display==='none'?'block':'none';this.textContent=el.style.display==='none'?'已結清（${settledEntries.length}）▼':'已結清（${settledEntries.length}）▲'" style="${btnStyle};color:var(--txt3);width:100%">已結清（${settledEntries.length}）▼</button><div id="ar-settled" style="display:none;margin-top:4px">${settledRows}</div></div>`:'';
     const rateRow=`<div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1.5px solid #f2f2f7">
-      <span style="font-size:12px;font-weight:700;color:var(--txt3);white-space:nowrap">待換匯率</span>
+      <span style="font-size:12px;font-weight:700;color:var(--txt3);white-space:nowrap">待結款率</span>
       <input type="number" id="est-rate" value="${rate}" step="0.001" inputmode="decimal"
         style="width:72px;padding:7px 10px;font-size:14px;font-weight:700;border:1.5px solid #e5e5ea;border-radius:9px;text-align:center;background:#fff;color:var(--txt)"
         onchange="saveEstRate(this.value);renderSummary()" onclick="event.stopPropagation()">
@@ -1776,15 +1776,15 @@ function renderAccTx(accName,isCNY){
     recs.forEach(r=>{
       if(r.type==='出貨'&&r.payment_status==='paid'&&r.paid_to===accName&&r.sell_currency!=='TWD')
         tx.push({date:r.date,desc:`出貨收款 ${r.vendor||''}`,amt:parseFloat(r.total)||0,sign:1});
-      if(r.type==='換匯'&&r.from_account===accName)
-        tx.push({date:r.date,desc:`換匯出 → ${r.account||''}`,amt:parseFloat(r.rmb)||0,sign:-1});
+      if(r.type==='結款'&&r.from_account===accName)
+        tx.push({date:r.date,desc:`結款出 → ${r.account||''}`,amt:parseFloat(r.rmb)||0,sign:-1});
     });
     const ar=getAR();
     Object.entries(ar).forEach(([v,e])=>{if(e.settled_to===accName&&e.settled_amount&&e.settled_at)tx.push({date:e.settled_at,desc:`${v} AR結清`,amt:parseFloat(e.settled_amount)||0,sign:1});});
   }else{
     recs.forEach(r=>{
       if(r.type==='進貨'&&r.payment===accName)tx.push({date:r.date,desc:`進貨 ${r.seller||''}${r.buy_currency==='RMB'?' (RMB購入)':''}`,amt:(parseFloat(r.total)||0)+(parseFloat(r.fee)||0),sign:-1});
-      if(r.type==='換匯'&&r.account===accName)tx.push({date:r.date,desc:`換匯入 ${r.channel||''}`,amt:parseFloat(r.twd)||0,sign:1});
+      if(r.type==='結款'&&r.account===accName)tx.push({date:r.date,desc:`結款入 ${r.channel||''}`,amt:parseFloat(r.twd)||0,sign:1});
       if(r.type==='稅金'&&r.card===accName)tx.push({date:r.date,desc:`稅金 ${r.vendor||''}`,amt:parseFloat(r.twd)||0,sign:-1});
       if(r.type==='其他'&&r.account===accName)tx.push({date:r.date,desc:r.desc||'其他',amt:parseFloat(r.amount)||0,sign:r.dir==='收入'?1:-1});
       if(r.type==='出貨'&&r.payment_status==='paid'&&r.paid_to===accName&&r.sell_currency==='TWD')tx.push({date:r.date,desc:`出貨收款 ${r.vendor||''} (TWD)`,amt:parseFloat(r.total)||0,sign:1});
@@ -1848,15 +1848,15 @@ function confirmARSettle(){
     const rate=parseFloat(document.getElementById('settle-rate').value);
     const twd=parseFloat(document.getElementById('settle-twd').value);
     const acc=document.getElementById('settle-twd-acc').value;
-    const ch=(document.getElementById('settle-ch').value||'').trim()||_settleVendor+'打款換匯';
+    const ch=(document.getElementById('settle-ch').value||'').trim()||_settleVendor+'打款結款';
     if(!rate||!twd||!acc){toast('請填寫匯率、台幣金額和收款帳戶');return;}
-    const rec={id:Date.now(),type:'換匯',date:today(),channel:ch,rmb:String(rmb),twd:String(twd),rate:String(rate),account:acc,from_vendor:_settleVendor,note:`${_settleVendor} AR結清換匯`};
+    const rec={id:Date.now(),type:'結款',date:today(),channel:ch,rmb:String(rmb),twd:String(twd),rate:String(rate),account:acc,from_vendor:_settleVendor,note:`${_settleVendor} AR結清結款`};
     const recs=getRecs();recs.unshift(rec);saveRecs(recs);
     ar[_settleVendor].owed=Math.max(0,(ar[_settleVendor].owed||0)-rmb);
     ar[_settleVendor].settled_to=acc;ar[_settleVendor].settled_at=today();
     saveAR(ar);
-    logActivity('AR結清換匯',`${_settleVendor} ¥${fmt(rmb)} @${rate} → NT$${fmt(twd)} → ${acc}`);
-    toast(`✓ 換匯結清 ¥${fmt(rmb)} → NT$${fmt(twd)} 到 ${acc}`);
+    logActivity('AR結清結款',`${_settleVendor} ¥${fmt(rmb)} @${rate} → NT$${fmt(twd)} → ${acc}`);
+    toast(`✓ 結款結清 ¥${fmt(rmb)} → NT$${fmt(twd)} 到 ${acc}`);
   }else{
     const acc=document.getElementById('settle-acc').value;
     if(!acc){toast('請選擇帳戶');return;}
@@ -1900,7 +1900,7 @@ function exportCSV(){
   const rows=list.map(r=>{
     if(r.type==='出貨')return[r.date,'出貨',r.vendor,r.airline,r.miles,r.unitprice+'RMB/萬',r.total,'RMB','',r.note];
     if(r.type==='進貨')return[r.date,'進貨',r.seller,r.airline,r.miles,r.unitprice+'TWD/哩',r.total,'TWD',r.payment,r.note];
-    if(r.type==='換匯')return[r.date,'換匯',r.channel,'','','',r.rmb+'→'+r.twd,'CNY→TWD',r.account,r.note];
+    if(r.type==='結款')return[r.date,'結款',r.channel,'','','',r.rmb+'→'+r.twd,'CNY→TWD',r.account,r.note];
     if(r.type==='稅金')return[r.date,'稅金',r.vendor,'','','',r.twd+'TWD/'+r.rmb+'RMB','',r.card,r.note];
     if(r.type==='其他')return[r.date,'其他','','','','',r.amount,'TWD',r.account,r.desc];
     if(r.type==='理賠')return[r.date,'理賠',r.vendor,'','','',r.twd,'TWD','',r.desc||''];
@@ -1913,7 +1913,7 @@ function exportCSV(){
 }
 
 function fmt(n){return Math.round(n).toLocaleString('zh-TW');}
-const _typeLabel={'換匯':'結款'};
+const _typeLabel={'結款':'結款'};
 function typeLabel(t){return _typeLabel[t]||t;}
 
 let _tt;
@@ -1937,8 +1937,8 @@ document.querySelectorAll('#atabs .tab').forEach(tab=>{
     const f=tab.dataset.f;
     document.querySelectorAll('#atabs .tab').forEach(t=>t.classList.remove('active'));
     tab.classList.add('active');
-    ['出貨','進貨','換匯','稅金','其他','理賠'].forEach(x=>document.getElementById('form-'+x).style.display=x===f?'block':'none');
-    if(f==='換匯'){populateExchangeVendors();populateCNYAccounts();}
+    ['出貨','進貨','結款','稅金','其他','理賠'].forEach(x=>document.getElementById('form-'+x).style.display=x===f?'block':'none');
+    if(f==='結款'){populateExchangeVendors();populateCNYAccounts();}
     if(f==='理賠'){const re=document.getElementById('cl-rate');if(re&&!re.value)re.value=getEstRate();setDates();}
   });
 });
