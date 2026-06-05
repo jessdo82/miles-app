@@ -530,7 +530,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
 
 <script>
 // ─── App 版本 / 強制更新 ───────────────────────────────────
-const APP_VERSION='2026.06.06-3';
+const APP_VERSION='2026.06.06-4';
 async function forceUpdate(){
   try{
     // 清除所有 Cache Storage（若有）
@@ -575,19 +575,32 @@ async function syncCloud(){
     });
     const mergedRecs=[...byId.values()].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.id-a.id));
 
-    // 4. 合併 accounts（雲端優先，過濾已刪除）
-    const localAccs=getAccounts();
-    const cloudAccMap=new Map(Array.isArray(cloud?.accounts)?cloud.accounts.map(a=>[a.id,a]):[]);
-    const localOnlyAccs=localAccs.filter(a=>!cloudAccMap.has(a.id));
-    const mergedAccs=[...cloudAccMap.values(),...localOnlyAccs];
+    // 4. 合併 accounts（同 id 取 _t 較新；過濾雙方已刪除帳戶）
+    const allDeletedAcc=[...new Set([...getDeletedAcc(),...(Array.isArray(cloud?.deleted_acc)?cloud.deleted_acc:[])])];
+    saveDeletedAcc(allDeletedAcc);
+    const localAccs=getAccounts().filter(a=>!allDeletedAcc.includes(a.id));
+    const cloudAccs=(Array.isArray(cloud?.accounts)?cloud.accounts:[]).filter(a=>!allDeletedAcc.includes(a.id));
+    const accById=new Map();
+    cloudAccs.forEach(a=>accById.set(a.id,a));
+    localAccs.forEach(a=>{const c=accById.get(a.id);if(!c||(a._t||0)>(c._t||0))accById.set(a.id,a);});
+    const mergedAccs=[...accById.values()];
 
-    // 5. 合併 rates / profits / AR（本地優先：本機改過的值蓋掉雲端）
+    // 5. 合併 rates / profits（本地優先）
     const mergedRates={...(cloud?.rates||{}),...getRates()};
     const mergedProfits={...(cloud?.profits||{}),...getProfits()};
-    // AR: 逐廠商合併，取欠款較新的值（本地優先，雲端補充本地沒有的廠商）
+
+    // 5b. 合併 AR（逐廠商取 _t 較新；過濾雙方已刪除廠商）
+    const allDeletedAR=[...new Set([...getDeletedAR(),...(Array.isArray(cloud?.deleted_ar)?cloud.deleted_ar:[])])];
+    saveDeletedAR(allDeletedAR);
     const localAR=getAR();
     const cloudAR=cloud?.ar||{};
-    const mergedAR={...cloudAR,...localAR};
+    const mergedAR={};
+    new Set([...Object.keys(cloudAR),...Object.keys(localAR)]).forEach(v=>{
+      if(allDeletedAR.includes(v))return;            // 已刪除廠商不還原
+      const l=localAR[v],c=cloudAR[v];
+      if(l&&c)mergedAR[v]=((l._t||0)>=(c._t||0))?l:c; // 取較新
+      else mergedAR[v]=l||c;
+    });
 
     saveRecs(mergedRecs);
     saveAccounts(mergedAccs);
@@ -597,7 +610,7 @@ async function syncCloud(){
 
     // 6. 上傳合併後的資料（含刪除清單 + AR）
     const putRes=await fetch(FB,{method:'PUT',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({records:mergedRecs,accounts:mergedAccs,rates:mergedRates,profits:mergedProfits,ar:mergedAR,deleted:allDeleted,synced:new Date().toISOString()})});
+      body:JSON.stringify({records:mergedRecs,accounts:mergedAccs,rates:mergedRates,profits:mergedProfits,ar:mergedAR,deleted:allDeleted,deleted_acc:allDeletedAcc,deleted_ar:allDeletedAR,synced:new Date().toISOString()})});
     if(!putRes.ok){
       const txt=await putRes.text();
       throw new Error(`上傳失敗 ${putRes.status}: ${txt.slice(0,80)}`);
@@ -655,6 +668,12 @@ const saveAR=d=>localStorage.setItem(ARK,JSON.stringify(d));
 const DRK='ml_deleted';
 const getDeleted=()=>JSON.parse(localStorage.getItem(DRK)||'[]');
 const saveDeleted=d=>localStorage.setItem(DRK,JSON.stringify(d));
+const DAK='ml_deleted_acc';
+const getDeletedAcc=()=>JSON.parse(localStorage.getItem(DAK)||'[]');
+const saveDeletedAcc=d=>localStorage.setItem(DAK,JSON.stringify(d));
+const DARK='ml_deleted_ar';
+const getDeletedAR=()=>JSON.parse(localStorage.getItem(DARK)||'[]');
+const saveDeletedAR=d=>localStorage.setItem(DARK,JSON.stringify(d));
 function getEstRate(){return parseFloat(localStorage.getItem('ml_est_rate'))||4.66;}
 function saveEstRate(v){const n=parseFloat(v);if(!isNaN(n)&&n>0)localStorage.setItem('ml_est_rate',String(n));}
 
@@ -815,6 +834,7 @@ function submit(type){
       const ar=getAR();if(!ar[rec.vendor])ar[rec.vendor]={owed:0};
       // AR is always tracked in RMB; TWD sales don't go into AR
       if(sCurr!=='TWD')ar[rec.vendor].owed=(ar[rec.vendor].owed||0)+(parseFloat(rec.total)||0);
+      ar[rec.vendor]._t=Date.now();
       saveAR(ar);
     }
     clear('s-vendor','s-miles','s-up','s-total','s-note','s-pay-dest');
@@ -849,7 +869,7 @@ function submit(type){
     Object.assign(rec,{date:v('x-date')||today(),channel:v('x-ch'),rmb:v('x-rmb'),twd:v('x-twd'),rate:v('x-rate'),account:v('x-acc'),from_vendor:fromVendor,from_account:fromAccount,note:v('x-note')});
     learn('channel',rec.channel);learn('payment',rec.account);
     // Deduct from AR when vendor is specified
-    if(fromVendor&&rec.rmb){const ar=getAR();if(ar[fromVendor]){ar[fromVendor].owed=(ar[fromVendor].owed||0)-(parseFloat(rec.rmb)||0);saveAR(ar);}}
+    if(fromVendor&&rec.rmb){const ar=getAR();if(ar[fromVendor]){ar[fromVendor].owed=(ar[fromVendor].owed||0)-(parseFloat(rec.rmb)||0);ar[fromVendor]._t=Date.now();saveAR(ar);}}
     clear('x-ch','x-rmb','x-twd','x-rate','x-acc','x-note');
     if(document.getElementById('x-from'))document.getElementById('x-from').value='';
     if(document.getElementById('x-from-acc'))document.getElementById('x-from-acc').value='';
@@ -1073,9 +1093,9 @@ function saveAccount(){
   const accounts=getAccounts();
   if(editAccId){
     const idx=accounts.findIndex(a=>a.id===editAccId);
-    if(idx>=0) accounts[idx]={...accounts[idx],name,type,startBalance};
+    if(idx>=0) accounts[idx]={...accounts[idx],name,type,startBalance,_t:Date.now()};
   }else{
-    accounts.push({id:Date.now(),name,type,startBalance});
+    accounts.push({id:Date.now(),name,type,startBalance,_t:Date.now()});
   }
   saveAccounts(accounts);
   learn('payment',name);
@@ -1086,6 +1106,7 @@ function saveAccount(){
 function deleteAccount(){
   if(!editAccId)return;
   if(!confirm('刪除這個帳戶？（不影響已記錄的交易）'))return;
+  const del=getDeletedAcc();if(!del.includes(editAccId)){del.push(editAccId);saveDeletedAcc(del);}
   saveAccounts(getAccounts().filter(a=>a.id!==editAccId));
   closeAccModal();
   renderAccounts();
@@ -1587,6 +1608,7 @@ function submitInvSell(){
   const ar=getAR();
   if(!ar[vendor])ar[vendor]={owed:0};
   ar[vendor].owed=(ar[vendor].owed||0)+parseFloat(total);
+  ar[vendor]._t=Date.now();
   saveAR(ar);
   logActivity('庫存售出',`${src.airline} ${miles}W → ${vendor} @${up}`);
   closeInvSell();
@@ -1834,6 +1856,7 @@ function deleteAREntry(vendor){
   const ar=getAR();
   delete ar[vendor];
   saveAR(ar);
+  const del=getDeletedAR();if(!del.includes(vendor)){del.push(vendor);saveDeletedAR(del);}
   logActivity('刪除AR廠商',vendor);
   renderSummary();populateExchangeVendors();
 }
@@ -1846,6 +1869,7 @@ function editARAmount(vendor){
   if(isNaN(num))return;
   if(!ar[vendor])ar[vendor]={owed:0};
   ar[vendor].owed=num;
+  ar[vendor]._t=Date.now();
   saveAR(ar);
   renderSummary();
   populateExchangeVendors();
@@ -1855,9 +1879,11 @@ function addAREntry(){
   if(!vendor||!vendor.trim())return;
   const val=prompt(`${vendor.trim()} 目前欠款（CNY）：`,'0');
   if(val===null)return;
+  const name=vendor.trim();
   const ar=getAR();
-  ar[vendor.trim()]={owed:parseFloat(val)||0};
+  ar[name]={owed:parseFloat(val)||0,_t:Date.now()};
   saveAR(ar);
+  const del=getDeletedAR();if(del.includes(name)){saveDeletedAR(del.filter(v=>v!==name));} // 重新加入 → 移出刪除清單
   renderSummary();
   populateExchangeVendors();
 }
@@ -1972,7 +1998,7 @@ function confirmARSettle(){
     const rec={id:Date.now(),type:'結款',date:today(),channel:ch,rmb:String(rmb),twd:String(twd),rate:String(rate),account:acc,from_vendor:_settleVendor,note:`${_settleVendor} AR結清`};
     const recs=getRecs();recs.unshift(rec);saveRecs(recs);
     ar[_settleVendor].owed=Math.max(0,(ar[_settleVendor].owed||0)-rmb);
-    ar[_settleVendor].settled_to=acc;ar[_settleVendor].settled_at=today();
+    ar[_settleVendor].settled_to=acc;ar[_settleVendor].settled_at=today();ar[_settleVendor]._t=Date.now();
     saveAR(ar);
     logActivity('AR結清結款',`${_settleVendor} ¥${fmt(rmb)} @${rate} → NT$${fmt(twd)} → ${acc}`);
     toast(`✓ 結款結清 ¥${fmt(rmb)} → NT$${fmt(twd)} 到 ${acc}`);
@@ -1981,7 +2007,7 @@ function confirmARSettle(){
     if(!acc){toast('請選擇帳戶');return;}
     ar[_settleVendor].settled_amount=owed;
     ar[_settleVendor].settled_to=acc;ar[_settleVendor].settled_at=today();
-    ar[_settleVendor].owed=0;
+    ar[_settleVendor].owed=0;ar[_settleVendor]._t=Date.now();
     saveAR(ar);
     logActivity('AR收到帳戶',`${_settleVendor} ¥${fmt(owed)} → ${acc}`);
     toast(`✓ ¥${fmt(owed)} 已收到 ${acc}`);
