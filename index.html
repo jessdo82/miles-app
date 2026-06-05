@@ -1214,19 +1214,35 @@ function showRecordDetail(id){
       return orderNums.some(n=>rt.includes(n));
     });
   }
-  // Fallback: same date + same airline + vendor name in note/card (for JL and other non-numeric records)
+  // Fallback: same date + same airline + vendor name in note/card
   if(related.length===0&&rec.date&&(rec.type==='出貨'||rec.type==='進貨')){
     const sameDay=recs.filter(r=>r.id!==rec.id&&r.date===rec.date);
+    let candidates=[];
     if(rec.type==='出貨'&&rec.vendor){
       const v=rec.vendor.toLowerCase();
-      related=sameDay.filter(r=>r.type==='進貨'&&
+      candidates=sameDay.filter(r=>r.type==='進貨'&&
         [r.note,r.card].filter(Boolean).join(' ').toLowerCase().includes(v)&&
         (!rec.airline||!r.airline||r.airline===rec.airline));
     }else if(rec.type==='進貨'){
       const noteCard=[rec.note,rec.card].filter(Boolean).join(' ').toLowerCase();
-      related=sameDay.filter(r=>r.type==='出貨'&&r.vendor&&
+      candidates=sameDay.filter(r=>r.type==='出貨'&&r.vendor&&
         noteCard.includes(r.vendor.toLowerCase())&&
         (!rec.airline||!r.airline||r.airline===rec.airline));
+    }
+    if(candidates.length===1){related=candidates;}
+    else if(candidates.length>1){
+      const sNote=(rec.note||'').toLowerCase();
+      const sMiles=String(rec.miles||'');
+      const scored=candidates.map(b=>{
+        const bNote=(b.note||'').toLowerCase();
+        let sc=0;
+        if(bNote.length>=3&&sNote.includes(bNote))sc+=2;
+        if(sNote.length>=3&&bNote.includes(sNote))sc+=2;
+        if(sMiles&&sMiles!=='0'&&bNote.includes(sMiles))sc+=1;
+        return{b,sc};
+      });
+      const mx=Math.max(...scored.map(x=>x.sc));
+      related=mx>0?scored.filter(x=>x.sc===mx).map(x=>x.b):candidates;
     }
   }
 
