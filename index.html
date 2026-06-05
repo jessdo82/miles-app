@@ -1207,11 +1207,14 @@ function showRecordDetail(id){
   const orderNums=(searchText.match(/\d{8,}/g)||[]);
   let related=[],isBatch=false;
   if(orderNums.length>0){
+    const recMs=rec.date?new Date(rec.date).getTime():0;
     related=recs.filter(r=>{
       if(r.id===rec.id)return false;
       if(r.type!=='出貨'&&r.type!=='進貨')return false;
       const rt=[r.note,r.card].filter(Boolean).join(' ');
-      return orderNums.some(n=>rt.includes(n));
+      if(!orderNums.some(n=>rt.includes(n)))return false;
+      if(r.date&&recMs){const diff=Math.abs(new Date(r.date).getTime()-recMs);if(diff>60*864e5)return false;}
+      return true;
     });
   }
   // Fallback: same date + same airline + vendor name in note/card
