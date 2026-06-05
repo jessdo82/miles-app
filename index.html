@@ -13,7 +13,7 @@
   --border:rgba(0,0,0,.08);--border-hi:rgba(0,0,0,.14);
   --txt:#1c1c1e;--txt2:#6e6e73;--txt3:#aeaeb2;
   --blue:#007aff;--green:#34c759;--red:#ff3b30;
-  --orange:#ff9500;--purple:#af52de;
+  --orange:#ff9500;--purple:#af52de;--claim:#c0392b;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'PingFang TC',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
@@ -40,6 +40,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang TC',sans-serif;backg
 #ftabs .tab[data-f2="換匯"].active{background:var(--orange);box-shadow:0 2px 8px rgba(255,149,0,.3)}
 #ftabs .tab[data-f2="稅金"].active{background:var(--red);box-shadow:0 2px 8px rgba(255,59,48,.3)}
 #ftabs .tab[data-f2="其他"].active{background:var(--purple);box-shadow:0 2px 8px rgba(175,82,222,.3)}
+#atabs .tab[data-f="理賠"].active{background:var(--claim);box-shadow:0 3px 10px rgba(192,57,43,.3)}
+#ftabs .tab[data-f2="理賠"].active{background:var(--claim);box-shadow:0 2px 8px rgba(192,57,43,.3)}
 
 .ct{padding:16px 16px 100px;max-width:520px;margin:0 auto}
 
@@ -97,6 +99,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
 .card.c-換匯{border-left-color:var(--orange)}
 .card.c-稅金{border-left-color:var(--red)}
 .card.c-其他{border-left-color:var(--purple)}
+.card.c-理賠{border-left-color:var(--claim)}
 .rc-top{display:flex;align-items:center;gap:8px;margin-bottom:9px}
 .badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.2px}
 .b-出貨{background:#e0f0ff;color:var(--blue)}
@@ -104,6 +107,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
 .b-換匯{background:#fff4e0;color:#c96500}
 .b-稅金{background:#ffe5e5;color:var(--red)}
 .b-其他{background:#f3e8ff;color:var(--purple)}
+.b-理賠{background:#ffeaea;color:var(--claim)}
 .rc-date{font-size:12px;color:var(--txt3);margin-left:auto;font-weight:500}
 .rc-del{background:none;border:none;color:var(--txt3);font-size:12px;cursor:pointer;padding:3px 6px;border-radius:6px}
 .rc-del:active{color:var(--red)}
@@ -168,6 +172,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
       <div class="tab" data-f="換匯">換匯</div>
       <div class="tab" data-f="稅金">代付稅金</div>
       <div class="tab" data-f="其他">其他</div>
+      <div class="tab" data-f="理賠">理賠</div>
     </div>
   </div>
   <div class="ct">
@@ -276,6 +281,18 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
       <div class="fg"><label>說明</label><input type="text" id="o-desc" placeholder="例：薪資、轉帳、個人支出…"></div>
       <button class="btn" onclick="submit('其他')">儲存</button>
     </div>
+    <!-- 理賠 -->
+    <div id="form-理賠" style="display:none">
+      <div class="fg"><label>日期</label><input type="date" id="cl-date"></div>
+      <div class="fg"><label>退費對象</label><div class="acw"><input type="text" id="cl-vendor" placeholder="廠商名稱" autocomplete="off"><div class="acl" id="cl-vendor-ac"></div></div></div>
+      <div class="row2">
+        <div class="fg"><label>退還金額（RMB）</label><input type="number" id="cl-rmb" placeholder="¥" inputmode="decimal" oninput="const r=parseFloat(document.getElementById('cl-rate').value)||getEstRate();if(this.value)document.getElementById('cl-twd').value=Math.round(parseFloat(this.value)*r);"></div>
+        <div class="fg"><label>匯率</label><input type="number" id="cl-rate" placeholder="4.66" step="0.001" inputmode="decimal" oninput="const v=parseFloat(document.getElementById('cl-rmb').value);if(v&&this.value)document.getElementById('cl-twd').value=Math.round(v*parseFloat(this.value));"></div>
+      </div>
+      <div class="fg"><label>台幣損失（TWD）</label><input type="number" id="cl-twd" class="calc" placeholder="自動計算，可手動填入" inputmode="decimal"></div>
+      <div class="fg"><label>說明</label><input type="text" id="cl-desc" placeholder="例：NH 掛票退費 CAO/XINGAN"></div>
+      <button class="btn" style="background:var(--claim)" onclick="submit('理賠')">儲存理賠</button>
+    </div>
   </div>
 </div>
 
@@ -307,6 +324,7 @@ input::placeholder,textarea::placeholder{color:var(--txt3)}
       <div class="tab" data-f2="換匯">換匯</div>
       <div class="tab" data-f2="稅金">稅金</div>
       <div class="tab" data-f2="其他">其他</div>
+      <div class="tab" data-f2="理賠">理賠</div>
     </div>
   </div>
   <div class="ct" id="rec-list"></div>
@@ -623,7 +641,7 @@ function learn(field,val){
 
 // ─── Date ──────────────────────────────────────────────────
 const today=()=>new Date().toLocaleDateString('sv-SE');
-const setDates=()=>['s-date','b-date','x-date','t-date','o-date'].forEach(id=>{
+const setDates=()=>['s-date','b-date','x-date','t-date','o-date','cl-date'].forEach(id=>{
   const el=document.getElementById(id); if(el&&!el.value)el.value=today();
 });
 
@@ -792,11 +810,17 @@ function submit(type){
     Object.assign(rec,{date:v('o-date')||today(),dir:segVal('o-dir-seg'),account:v('o-acc'),amount:v('o-amt'),desc:v('o-desc')});
     learn('payment',rec.account);
     clear('o-acc','o-amt','o-desc');
+  }else if(type==='理賠'){
+    if(!v('cl-vendor')||!v('cl-twd')){toast('請填寫退費對象和台幣損失');return;}
+    Object.assign(rec,{date:v('cl-date')||today(),vendor:v('cl-vendor'),rmb:v('cl-rmb'),rate:v('cl-rate'),twd:v('cl-twd'),desc:v('cl-desc')});
+    learn('vendor',rec.vendor);
+    clear('cl-vendor','cl-rmb','cl-rate','cl-twd','cl-desc');
   }
   const recs=getRecs(); recs.unshift(rec); saveRecs(recs);
   const logDetail=rec.type==='出貨'?`${rec.vendor||''} ¥${rec.total||''} ${rec.payment_status==='paid'?'已付款':'未付款'}`
     :rec.type==='進貨'?`${rec.seller||''} ${rec.airline||''} ${rec.miles||''}萬 NT$${rec.total||''}`
     :rec.type==='換匯'?`${rec.channel||''} ¥${rec.rmb||''}→NT$${rec.twd||''} @${rec.rate||''}`
+    :rec.type==='理賠'?`${rec.vendor||''} NT$${rec.twd||''} ${rec.desc||''}`
     :`${rec.account||rec.vendor||''}`;
   logActivity('新增'+type, logDetail);
   setDates(); toast('✓ 已儲存');
@@ -1073,6 +1097,7 @@ function renderRecords(){
     else if(r.type==='換匯'){main=esc(r.channel||'');sub=[r.rate&&'匯率'+r.rate,r.account,r.from_vendor&&'來自 '+r.from_vendor].filter(Boolean).join(' · ');amt=(r.rmb||r.twd)?`<span class="orange">¥${r.rmb}→$${r.twd}</span>`:'';}
     else if(r.type==='稅金'){main=esc(r.vendor||'');sub=[r.card,r.note].filter(Boolean).join(' · ');amt=[r.twd&&`<span class="red">-NT$${r.twd}</span>`,r.rmb&&`<span class="blue">+¥${r.rmb}</span>`].filter(Boolean).join('<br>');}
     else if(r.type==='其他'){main=esc(r.account||'');sub=esc(r.desc||'');const sign=r.dir==='收入'?'+':'-';const cls=r.dir==='收入'?'green':'red';amt=r.amount?`<span class="${cls}">${sign}NT$${r.amount}</span>`:'';}
+    else if(r.type==='理賠'){main=esc(r.vendor||'');sub=esc(r.desc||'');amt=r.twd?`<span style="color:var(--claim)">-NT$ ${fmt(parseFloat(r.twd)||0)}</span>`:'';if(r.rmb)sub=(sub?sub+' · ':'')+`退¥${r.rmb}`;}
     return `<div class="card c-${r.type}" onclick="showRecordDetail(${r.id})" style="cursor:pointer"><div class="rc-top"><span class="badge b-${r.type}">${r.type}</span><span class="rc-date">${r.date}</span><button class="rc-del" onclick="event.stopPropagation();delRec(${r.id})">刪除</button></div><div class="rc-body"><div><div class="rc-main">${main}</div><div class="rc-sub">${sub}${r.note&&r.type!=='稅金'&&r.type!=='其他'?'<br><i>'+esc(r.note)+'</i>':''}</div></div><div class="rc-amt">${amt}</div></div></div>`;
   }).join('');
   el.innerHTML=summaryBar+`<button class="btn-export" onclick="exportCSV()">${curFilter==='全部'?'匯出全部 CSV':'匯出此類 CSV'}</button>`+cards;
@@ -1236,7 +1261,8 @@ function showRecordDetail(id){
   const subLine=[rec.miles&&rec.miles+'萬哩',rec.unitprice&&'@'+rec.unitprice].filter(Boolean).join(' ');
   const amtLine=rec.type==='出貨'
     ?(hasPT(rec)?`<span class="blue">NT$ ${fmt(parseFloat(rec.twd)||0)}</span>`:(rec.total?`<span class="blue">${rec.sell_currency==='TWD'?'+NT$':'+¥'}${rec.total}</span>`:''))
-    :rec.type==='進貨'?(rec.total?`<span class="red">-NT$ ${fmt((parseFloat(rec.total)||0)+(parseFloat(rec.fee)||0))}</span>${rec.buy_currency==='RMB'?`<br><span style="font-size:11px;color:var(--txt3)">¥${rec.buy_rmb||rec.total} × ${rec.buy_rate||'?'}</span>`:''}`:''):'';
+    :rec.type==='進貨'?(rec.total?`<span class="red">-NT$ ${fmt((parseFloat(rec.total)||0)+(parseFloat(rec.fee)||0))}</span>${rec.buy_currency==='RMB'?`<br><span style="font-size:11px;color:var(--txt3)">¥${rec.buy_rmb||rec.total} × ${rec.buy_rate||'?'}</span>`:''}`:'')
+    :rec.type==='理賠'?(rec.twd?`<span style="color:var(--claim);font-size:18px;font-weight:800">-NT$ ${fmt(parseFloat(rec.twd)||0)}</span>`:''):'';
 
   // Related records (max 5, with overflow count)
   let relatedHTML='';
@@ -1251,6 +1277,21 @@ function showRecordDetail(id){
     });
     if(more>0)relatedHTML+=`<div style="padding:8px 0;font-size:12px;color:var(--txt3);text-align:center">…還有 ${more} 筆</div>`;
     relatedHTML+='</div>';
+  }
+
+  // 理賠 detail
+  let claimHTML='';
+  if(rec.type==='理賠'){
+    const rows=[
+      rec.vendor&&['退費對象',rec.vendor],
+      rec.rmb&&['退還金額（RMB）',`¥ ${fmt(parseFloat(rec.rmb))}`],
+      rec.rate&&['換算匯率',`${rec.rate} TWD/CNY`],
+      rec.twd&&['台幣損失（TWD）',`-NT$ ${fmt(parseFloat(rec.twd))}`],
+      rec.desc&&['說明',rec.desc],
+    ].filter(Boolean);
+    claimHTML=`<div style="margin-top:14px;background:#ffeaea;border-radius:12px;padding:14px">
+      ${rows.map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f2e5e5;font-size:13px"><span style="color:var(--txt3)">${k}</span><span style="font-weight:600">${esc(String(v))}</span></div>`).join('')}
+    </div>`;
   }
 
   // Enhanced 換匯 detail
@@ -1303,7 +1344,7 @@ function showRecordDetail(id){
       ${payBadge}
       ${inventoryBadge}
     </div>
-    ${exchangeHTML}${relatedHTML}${profitHTML}`;
+    ${claimHTML}${exchangeHTML}${relatedHTML}${profitHTML}`;
   document.getElementById('modal-deal').classList.add('open');
 }
 function closeRecordDetail(){document.getElementById('modal-deal').classList.remove('open');}
@@ -1571,6 +1612,26 @@ function renderSummary(){
     <div id="range-result" style="text-align:center;padding:8px 0"><span style="color:var(--txt3)">選擇起訖日期</span></div>
   </div>
   ${(()=>{
+    const claimRecs=recs.filter(r=>r.type==='理賠').sort((a,b)=>(b.date||'')>(a.date||'')?1:-1);
+    const totalClaim=claimRecs.reduce((s,r)=>s+(parseFloat(r.twd)||0),0);
+    if(!claimRecs.length)return '';
+    const rows=claimRecs.map(r=>`<div class="sc-r" style="align-items:flex-start">
+      <div style="flex:1"><span style="font-weight:500;color:var(--txt)">${esc(r.desc||r.vendor||'')}</span>${r.vendor&&r.desc?`<span style="font-size:11px;color:var(--txt3);margin-left:4px">— ${esc(r.vendor)}</span>`:''}<br><span style="font-size:11px;color:var(--txt3)">${r.date}${r.rmb?` · 退¥${r.rmb}`:''}</span></div>
+      <span style="color:var(--claim);font-weight:700;white-space:nowrap;padding-top:2px">-NT$ ${fmt(parseFloat(r.twd)||0)}</span>
+    </div>`).join('');
+    return `<div class="sc" style="margin-bottom:14px;border:2px solid #ffd0ce">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:800;color:var(--claim)">⚠ 理賠損失記錄</div>
+        <span style="font-size:12px;color:var(--txt3)">${claimRecs.length} 筆</span>
+      </div>
+      ${rows}
+      <div style="border-top:2px solid #ffd0ce;margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:800;color:var(--claim)">累計理賠損失</span>
+        <span style="font-size:18px;font-weight:900;color:var(--claim)">-NT$ ${fmt(totalClaim)}</span>
+      </div>
+    </div>`;
+  })()}
+  ${(()=>{
     const ar=getAR();
     const btnStyle='font-size:11px;padding:3px 8px;border-radius:7px;border:1.5px solid #e5e5ea;background:#fff;cursor:pointer;white-space:nowrap';
     const mkRow=(vendor,owed)=>{
@@ -1798,6 +1859,7 @@ function exportCSV(){
     if(r.type==='換匯')return[r.date,'換匯',r.channel,'','','',r.rmb+'→'+r.twd,'CNY→TWD',r.account,r.note];
     if(r.type==='稅金')return[r.date,'稅金',r.vendor,'','','',r.twd+'TWD/'+r.rmb+'RMB','',r.card,r.note];
     if(r.type==='其他')return[r.date,'其他','','','','',r.amount,'TWD',r.account,r.desc];
+    if(r.type==='理賠')return[r.date,'理賠',r.vendor,'','','',r.twd,'TWD','',r.desc||''];
     return[];
   });
   const csv=[hdr,...rows].map(row=>row.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
@@ -1829,8 +1891,9 @@ document.querySelectorAll('#atabs .tab').forEach(tab=>{
     const f=tab.dataset.f;
     document.querySelectorAll('#atabs .tab').forEach(t=>t.classList.remove('active'));
     tab.classList.add('active');
-    ['出貨','進貨','換匯','稅金','其他'].forEach(x=>document.getElementById('form-'+x).style.display=x===f?'block':'none');
+    ['出貨','進貨','換匯','稅金','其他','理賠'].forEach(x=>document.getElementById('form-'+x).style.display=x===f?'block':'none');
     if(f==='換匯'){populateExchangeVendors();populateCNYAccounts();}
+    if(f==='理賠'){const re=document.getElementById('cl-rate');if(re&&!re.value)re.value=getEstRate();setDates();}
   });
 });
 document.querySelectorAll('#ftabs .tab').forEach(tab=>{
