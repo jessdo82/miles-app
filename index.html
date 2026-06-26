@@ -720,9 +720,10 @@ function importPlain(input){
       if(d.rates)saveRates(d.rates);
       if(d.profits)saveProfits(d.profits);
       if(d.ar)saveAR(d.ar);
-      if(d.deleted)saveDeleted(d.deleted);
-      if(d.deleted_acc)saveDeletedAcc(d.deleted_acc);
-      if(d.deleted_ar)saveDeletedAR(d.deleted_ar);
+      // 刪除標記用「聯集」合併，避免蓋掉既有的、也讓檔案帶的刪除標記生效（同步時連雲端一起清）
+      if(d.deleted)saveDeleted([...new Set([...getDeleted(),...d.deleted])]);
+      if(d.deleted_acc)saveDeletedAcc([...new Set([...getDeletedAcc(),...d.deleted_acc])]);
+      if(d.deleted_ar)saveDeletedAR([...new Set([...getDeletedAR(),...d.deleted_ar])]);
       alert('✓ 匯入完成。請按「雲端同步」上傳（若已啟用加密會自動加密）。');
       location.reload();
     }catch(e){alert('匯入失敗：'+e.message);}
