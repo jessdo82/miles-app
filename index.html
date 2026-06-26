@@ -1061,7 +1061,7 @@ function submit(type){
     if(sCurr==='TWD')rec.sell_currency='TWD';
     readShare(rec,'s-share-seg','s-share-amt','s-share-partner');
     learn('vendor',rec.vendor);
-    if(payDest)learn('payment',payDest);
+    if(payDest){learn('payment',payDest);maybeCreateAccount(payDest,sCurr!=='TWD');}
     if(payStatus==='unpaid'){
       const ar=getAR();if(!ar[rec.vendor])ar[rec.vendor]={owed:0};
       // AR is always tracked in RMB; TWD sales don't go into AR
@@ -1090,7 +1090,7 @@ function submit(type){
     Object.assign(rec,{date:v('b-date')||today(),seller:v('b-seller'),airline:v('b-airline'),miles:v('b-miles'),unitprice:v('b-up'),total:v('b-total'),fee:v('b-fee'),payment:v('b-pay'),note:v('b-note'),is_inventory:bInvEl&&bInvEl.checked?true:undefined,...buyCurrExtra});
     if(!rec.is_inventory)delete rec.is_inventory;
     readShare(rec,'b-share-seg','b-share-amt','b-share-partner');
-    learn('seller',rec.seller);learn('payment',rec.payment);
+    learn('seller',rec.seller);learn('payment',rec.payment);maybeCreateAccount(rec.payment,false);
     clear('b-seller','b-miles','b-up','b-total','b-fee','b-pay','b-note','b-buy-rate','b-twd-cost');
     resetShare('b-share-seg','b-share-amt','b-share-partner');
     if(bInvEl)bInvEl.checked=false;
@@ -1102,7 +1102,7 @@ function submit(type){
     const fromVendor=document.getElementById('x-from')?.value||'';
     const fromAccount=document.getElementById('x-from-acc')?.value||'';
     Object.assign(rec,{date:v('x-date')||today(),channel:v('x-ch'),rmb:v('x-rmb'),twd:v('x-twd'),rate:v('x-rate'),account:v('x-acc'),from_vendor:fromVendor,from_account:fromAccount,note:v('x-note')});
-    learn('channel',rec.channel);learn('payment',rec.account);
+    learn('channel',rec.channel);learn('payment',rec.account);maybeCreateAccount(rec.account,false);maybeCreateAccount(fromAccount,true);
     // Deduct from AR when vendor is specified
     if(fromVendor&&rec.rmb){const ar=getAR();if(ar[fromVendor]){ar[fromVendor].owed=(ar[fromVendor].owed||0)-(parseFloat(rec.rmb)||0);ar[fromVendor]._t=Date.now();saveAR(ar);}}
     clear('x-ch','x-rmb','x-twd','x-rate','x-acc','x-note');
@@ -1111,12 +1111,12 @@ function submit(type){
   }else if(type==='稅金'){
     if(!v('t-vendor')){toast('請填寫廠商');return;}
     Object.assign(rec,{date:v('t-date')||today(),vendor:v('t-vendor'),twd:v('t-twd'),rmb:v('t-rmb'),card:v('t-card'),note:v('t-note')});
-    learn('vendor',rec.vendor);learn('card',rec.card);learn('payment',rec.card);
+    learn('vendor',rec.vendor);learn('card',rec.card);learn('payment',rec.card);maybeCreateAccount(rec.card,false);
     clear('t-vendor','t-twd','t-rmb','t-card','t-note');
   }else if(type==='其他'){
     if(!v('o-acc')||!v('o-amt')){toast('請填寫帳戶和金額');return;}
     Object.assign(rec,{date:v('o-date')||today(),dir:segVal('o-dir-seg'),account:v('o-acc'),amount:v('o-amt'),desc:v('o-desc')});
-    learn('payment',rec.account);
+    learn('payment',rec.account);maybeCreateAccount(rec.account,false);
     clear('o-acc','o-amt','o-desc');
   }else if(type==='理賠'){
     if(!v('cl-vendor')||!v('cl-twd')){toast('請填寫退費對象和台幣損失');return;}
@@ -1190,38 +1190,17 @@ function getBalance(accName){
 }
 
 // ─── Render Accounts ───────────────────────────────────────
-// 記錄裡參照到、但帳戶清單沒有的帳戶 → 自動建立（類型預設「其他」，CNY 情境自動設人民幣帳戶）
-function ensureAccountsFromRecords(){
+// 記帳當下：用到一個還不存在的帳戶就建立「那一個」（不掃全部舊記錄、不再亂建垃圾帳戶）
+function maybeCreateAccount(name,isCNY){
+  if(name===undefined||name===null)return;
+  name=String(name).trim();
+  if(!name)return;
   const accs=getAccounts();
-  const existing=new Set(accs.map(a=>a.name));
-  const dismissed=new Set(getDismissedAcc());
-  const refs=new Map(); // name -> isCNY
-  const mark=(name,isCNY)=>{
-    if(name===undefined||name===null)return;
-    name=String(name).trim();
-    if(!name||existing.has(name)||dismissed.has(name))return;
-    refs.set(name, refs.get(name)||isCNY);
-  };
-  getRecs().forEach(r=>{
-    if(r.type==='進貨')mark(r.payment,false);
-    else if(r.type==='出貨'&&r.payment_status==='paid')mark(r.paid_to, r.sell_currency!=='TWD');
-    else if(r.type==='結款'){mark(r.account,false);mark(r.from_account,true);}
-    else if(r.type==='其他')mark(r.account,false);
-    else if(r.type==='轉帳'){mark(r.from_account,false);mark(r.to_account,false);}
-    // 稅金 card 刻意不自動建：代付稅金回款不會在 getBalance 加回，餘額會誤顯示為一直負的
-  });
-  const ar=getAR();
-  Object.values(ar).forEach(e=>{if(e&&e.settled_to)mark(e.settled_to,true);});
-  if(refs.size===0)return false;
-  const now=Date.now();let i=0;
-  refs.forEach((isCNY,name)=>{
-    accs.push({id:now+(i++),name,type:isCNY?'人民幣帳戶':'其他',startBalance:'',_t:now,auto:true});
-  });
+  if(accs.some(a=>a.name===name))return;
+  accs.push({id:Date.now()+Math.floor(Math.random()*1000),name,type:isCNY?'人民幣帳戶':'其他',startBalance:'',_t:Date.now()});
   saveAccounts(accs);
-  return true;
 }
 function renderAccounts(){
-  ensureAccountsFromRecords();
   const accounts=getAccounts();
   const el=document.getElementById('acc-list');
   if(!accounts.length){
