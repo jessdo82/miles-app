@@ -1232,7 +1232,7 @@ function renderAccounts(){
   const typeOrder=['銀行','電子支付','現金（自己）','現金（他人）','現金','人民幣帳戶','親友代管','預付定金','借出款項','借出','其他'];
   const grouped={};
   typeOrder.forEach(t=>grouped[t]=[]);
-  accounts.forEach(a=>{const t=a.type||'其他';if(!grouped[t])grouped[t]=[];grouped[t].push(a);});
+  accounts.forEach(a=>{if(a.auto)return;const t=a.type||'其他';if(!grouped[t])grouped[t]=[];grouped[t].push(a);}); // auto 帳戶另置可收合區
 
   const twdAccs=accounts.filter(a=>a.type!=='人民幣帳戶');
   const cnyAccs=accounts.filter(a=>a.type==='人民幣帳戶');
@@ -1308,6 +1308,19 @@ function renderAccounts(){
     });
     html+='</div>';
   });
+
+  // 自動建立的帳戶（可收合，預設收起）
+  const autoAccs=accounts.filter(a=>a.auto);
+  if(autoAccs.length){
+    const open=localStorage.getItem('ml_autoacc_open')==='1';
+    const sub=autoAccs.reduce((s,a)=>s+getBalance(a.name),0);
+    html+=`<div class="acc-section">
+      <div class="acc-section-title" style="cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none" onclick="localStorage.setItem('ml_autoacc_open',localStorage.getItem('ml_autoacc_open')==='1'?'0':'1');renderAccounts()">
+        <span style="font-size:13px">${open?'▾':'▸'}</span><span>📂 自動建立的帳戶（${autoAccs.length}）</span>&nbsp;NT$ ${fmt(sub)}
+      </div>
+      ${open?autoAccs.map(a=>{const bal=getBalance(a.name);const cls=bal>=0?'pos':'neg';const cur=a.type==='人民幣帳戶'?'¥':'NT$';return `<div class="acc-row" onclick="openAccModal(${a.id})"><span class="acc-name">${esc(a.name)}</span><span class="acc-bal ${cls}">${cur} ${fmt(bal)}</span></div>`;}).join(''):''}
+    </div>`;
+  }
 
   // 哩程庫存 section
   if(invTotalMiles>0){
@@ -1494,6 +1507,25 @@ function delRec(id){
         ar[rec.from_vendor].owed=(parseFloat(ar[rec.from_vendor].owed)||0)+(parseFloat(rec.rmb)||0);
         ar[rec.from_vendor]._t=Date.now();
         saveAR(ar);
+      }
+    }
+    // 還原庫存：刪除「庫存售出」產生的出貨時，把哩程/成本加回原批次（或整批重建）
+    if(rec.inv_src_id!==undefined){
+      let recs2=getRecs();
+      if(rec.inv_full&&rec.inv_src_snapshot){
+        try{const snap=JSON.parse(rec.inv_src_snapshot);snap._t=Date.now();
+          if(!recs2.some(r=>r.id===snap.id))recs2.push(snap);
+          saveDeleted(getDeleted().filter(x=>x!==snap.id)); // 從墓碑移除，避免同步又把它刪掉
+          saveRecs(recs2);
+        }catch(e){}
+      }else{
+        const si=recs2.findIndex(r=>r.id===rec.inv_src_id);
+        if(si>=0){
+          recs2[si].miles=String(Math.round(((parseFloat(recs2[si].miles)||0)+(parseFloat(rec.inv_sold_miles)||0))*100)/100);
+          recs2[si].total=String((parseFloat(recs2[si].total)||0)+(parseFloat(rec.inv_sold_cost)||0));
+          recs2[si].is_inventory=true;recs2[si]._t=Date.now();
+          saveRecs(recs2);
+        }
       }
     }
   }
@@ -1925,7 +1957,9 @@ function submitInvSell(){
   const total=(miles*up).toFixed(0);
   // 按出貨比例分攤庫存成本，記在出貨記錄上，計入出貨當月淨利
   const soldCost=srcMiles>0?Math.round(srcTotal*miles/srcMiles):srcTotal;
-  const newSell={id:Date.now(),type:'出貨',date,vendor,airline:src.airline||'',miles:String(miles),unitprice:String(up),total,payment_status:'unpaid',inv_cost:String(soldCost),note:note||`庫存 ${src.seller?esc(src.seller):''}`};
+  const srcSnapshot=JSON.parse(JSON.stringify(src)); // 反刪還原用：原始批次完整快照
+  const newSell={id:Date.now(),type:'出貨',date,vendor,airline:src.airline||'',miles:String(miles),unitprice:String(up),total,payment_status:'unpaid',inv_cost:String(soldCost),note:note||`庫存 ${src.seller?esc(src.seller):''}`,
+    inv_src_id:src.id,inv_sold_miles:String(miles),inv_sold_cost:String(soldCost)};
   const isPartial=miles<srcMiles-0.001;
   if(isPartial){
     // 縮減原庫存批次為剩餘部分（成本同步扣掉已售部分），仍留在庫存
@@ -1935,7 +1969,9 @@ function submitInvSell(){
     delete recs[srcIdx].fee;
     recs[srcIdx]._t=Date.now();
   }else{
-    // 整批售出：移除庫存批次（成本已轉到出貨記錄的 inv_cost）
+    // 整批售出：移除庫存批次（成本已轉到出貨記錄的 inv_cost）；快照存到出貨上供反刪重建
+    newSell.inv_full=true;
+    newSell.inv_src_snapshot=JSON.stringify(srcSnapshot);
     const removedId=recs[srcIdx].id;
     recs.splice(srcIdx,1);
     const del=getDeleted();if(!del.includes(removedId))del.push(removedId);saveDeleted(del);
