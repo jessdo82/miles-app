@@ -695,10 +695,11 @@ async function disableEncryption(){
   if(!isEncOn()){alert('目前未加密');return;}
   if(!_encKey){alert('請先解鎖再關閉加密');return;}
   if(!confirm('關閉加密？雲端將還原成明文（任何有連結的人又能讀取你的資料）。確定？'))return;
-  const keyBefore=_encKey;
-  localStorage.removeItem('ml_enc_on');localStorage.removeItem('ml_enc_meta');localStorage.removeItem('ml_enc_key');_encKey=null;
-  alert('加密已關閉，現在同步一次把雲端還原為明文。');
-  await syncCloud();closeSettings();
+  // 先關 enc 旗標(上傳改明文)，但保留金鑰讓這次同步仍能解密雲端舊密文；同步成功後才清金鑰
+  localStorage.removeItem('ml_enc_on');
+  await syncCloud();
+  localStorage.removeItem('ml_enc_meta');localStorage.removeItem('ml_enc_key');_encKey=null;
+  alert('✓ 加密已關閉，雲端已還原為明文。');closeSettings();
 }
 function forgetDeviceKey(){localStorage.removeItem('ml_enc_key');_encKey=null;alert('已清除本機記住的金鑰。下次開啟需重新輸入密碼。');if(isEncOn())showLock();closeSettings();}
 function exportPlain(){
