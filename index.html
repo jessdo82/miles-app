@@ -647,23 +647,43 @@ async function doUnlock(){
   if(inp)inp.value='';if(err)err.textContent='';hideLock();
   try{renderSummary();renderRecords();}catch(e){}
 }
+// 直接把本機資料覆蓋上傳雲端（不 GET/不合併/不解舊密文）——啟用/關閉加密用，最穩
+async function _pushLocalToCloud(encrypt){
+  const payloadObj={records:getRecs(),accounts:getAccounts(),rates:getRates(),profits:getProfits(),ar:getAR(),deleted:getDeleted(),deleted_acc:getDeletedAcc(),deleted_ar:getDeletedAR(),synced:new Date().toISOString()};
+  let body;
+  if(encrypt){
+    if(!_encKey)throw new Error('未解鎖，無法加密上傳');
+    const m=getEncMeta();const e=await _encObj(payloadObj,_encKey);
+    body=JSON.stringify({enc:true,v:2,salt:m.salt,iter:m.iter,iv:e.iv,ct:e.ct,synced:payloadObj.synced});
+  }else{
+    body=JSON.stringify(payloadObj);
+  }
+  const res=await fetch(FB,{method:'PUT',headers:{'Content-Type':'application/json'},body});
+  if(!res.ok)throw new Error('上傳失敗 '+res.status);
+  localStorage.setItem('ml_last_sync',new Date().toLocaleString('zh-TW'));
+}
+// 開機：鎖定與否「以雲端實際狀態為準」（避免本機殘留旗標把人鎖死或亂加密）
 async function initEnc(){
-  // 鎖定畫面預設已顯示（HTML display:flex）。決定要不要解鎖/收起。
-  if(isEncOn()){
+  let cloud=null;
+  try{const res=await fetch(FB);cloud=await res.json();}catch(e){cloud=null;}
+  if(cloud&&cloud.enc){
+    // 雲端是加密的 → 一定要密碼。本機 meta 的 salt 必須與雲端一致，否則改用雲端 salt 待解鎖
+    const m=getEncMeta();
+    if(!m||m.salt!==cloud.salt){
+      localStorage.setItem('ml_enc_meta',JSON.stringify({salt:cloud.salt,iter:cloud.iter||ENC_ITER}));
+      localStorage.removeItem('ml_enc_key');
+      _pendingCloud=cloud;
+    }
+    localStorage.setItem('ml_enc_on','1');
     const rk=await _loadRememberedKey();
     if(rk&&await _verifyKey(rk)){_encKey=rk;hideLock();return;}
+    if(!getEncMeta()||!getEncMeta().verify)_pendingCloud=cloud; // 無驗證token時用試解雲端來驗密碼
     showLock();return;
   }
-  // 本機未設定加密 → 問雲端是否已加密（新裝置/無痕也要擋）
-  try{
-    const res=await fetch(FB);
-    const cloud=await res.json();
-    if(cloud&&cloud.enc){
-      localStorage.setItem('ml_enc_meta',JSON.stringify({salt:cloud.salt,iter:cloud.iter||ENC_ITER}));
-      localStorage.setItem('ml_enc_on','1');
-      _pendingCloud=cloud;showLock();return;
-    }
-  }catch(e){/* 離線且本機未加密：放行 */}
+  if(cloud){
+    // 雲端是明文 → 清掉本機殘留的加密狀態，不鎖（解決打結狀態）
+    localStorage.removeItem('ml_enc_on');localStorage.removeItem('ml_enc_meta');localStorage.removeItem('ml_enc_key');_encKey=null;
+  }
   hideLock();
 }
 async function enableEncryption(){
@@ -675,8 +695,8 @@ async function enableEncryption(){
   const verify=await _encObj({chk:'MILES_OK'},key);
   localStorage.setItem('ml_enc_meta',JSON.stringify({salt:_b64(salt),iter:ENC_ITER,verify}));
   localStorage.setItem('ml_enc_on','1');_encKey=key;localStorage.removeItem('ml_enc_key');
-  alert('✓ 加密已啟用。下次開啟 App 會要求輸入密碼。現在自動同步一次，把雲端資料加密。');
-  await syncCloud();closeSettings();
+  await _pushLocalToCloud(true); // 直接把本機資料加密覆蓋雲端（不去解舊密文，避免打結）
+  alert('✓ 加密已啟用，雲端已加密。下次開啟 App 會要求輸入密碼。');closeSettings();
 }
 async function changePassword(){
   if(!isEncOn()){alert('尚未啟用加密');return;}
@@ -688,16 +708,14 @@ async function changePassword(){
   const verify=await _encObj({chk:'MILES_OK'},key);
   localStorage.setItem('ml_enc_meta',JSON.stringify({salt:_b64(salt),iter:ENC_ITER,verify}));
   _encKey=key;localStorage.removeItem('ml_enc_key');
-  alert('✓ 密碼已變更。下次開啟需用新密碼。現在同步一次以新密碼重新加密雲端。');
-  await syncCloud();closeSettings();
+  await _pushLocalToCloud(true); // 用新密碼把本機資料加密覆蓋雲端
+  alert('✓ 密碼已變更，雲端已以新密碼重新加密。下次開啟需用新密碼。');closeSettings();
 }
 async function disableEncryption(){
   if(!isEncOn()){alert('目前未加密');return;}
-  if(!_encKey){alert('請先解鎖再關閉加密');return;}
   if(!confirm('關閉加密？雲端將還原成明文（任何有連結的人又能讀取你的資料）。確定？'))return;
-  // 先關 enc 旗標(上傳改明文)，但保留金鑰讓這次同步仍能解密雲端舊密文；同步成功後才清金鑰
   localStorage.removeItem('ml_enc_on');
-  await syncCloud();
+  await _pushLocalToCloud(false); // 直接把本機資料以明文覆蓋雲端（不需解舊密文）
   localStorage.removeItem('ml_enc_meta');localStorage.removeItem('ml_enc_key');_encKey=null;
   alert('✓ 加密已關閉，雲端已還原為明文。');closeSettings();
 }
